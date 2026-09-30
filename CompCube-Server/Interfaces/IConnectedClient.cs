@@ -1,13 +1,15 @@
 ﻿using System.Runtime.CompilerServices;
-using CompCube.Models;
+using CompCube_Models.Models.ClientData;
+using CompCube_Models.Models.Packets;
+using CompCube_Models.Models.Packets.UserPackets;
 
 namespace CompCube_Server.Interfaces;
 
 public interface IConnectedClient
 {
-    public event Action<PlayerDiscardedMapsMessage, IConnectedClient>? OnUserDiscardedMaps;
-    public event Action<PlayerSelectedMapMessage, IConnectedClient>? OnMapSelection;
-    public event Action<ScoreSubmission, IConnectedClient>? OnScoreSubmission;
+    public event Action<DiscardMapsPacket, IConnectedClient>? OnUserDiscardedMaps;
+    public event Action<MapSelectionPacket, IConnectedClient>? OnMapSelection;
+    public event Action<ScoreSubmissionPacket, IConnectedClient>? OnScoreSubmission;
     
     public event Action<IConnectedClient>? OnDisconnected;
 

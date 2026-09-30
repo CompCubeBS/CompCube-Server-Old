@@ -1,5 +1,5 @@
-﻿using CompCube_Server.Config;
-using CompCube.Models;
+﻿using CompCube_Models.Models.ClientData;
+using CompCube_Server.Config;
 using MySqlConnector;
 
 namespace CompCube_Server.Data;

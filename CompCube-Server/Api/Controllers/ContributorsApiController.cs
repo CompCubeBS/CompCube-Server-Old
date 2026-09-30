@@ -1,4 +1,4 @@
-﻿using CompCube.Models;
+﻿using CompCube_Server.Models.CompCube_Models.Models.Contributors;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CompCube_Server.Api.Controllers;

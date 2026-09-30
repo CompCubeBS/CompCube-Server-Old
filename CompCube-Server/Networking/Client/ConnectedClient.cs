@@ -6,7 +6,6 @@ using CompCube_Models.Models.Packets;
 using CompCube_Models.Models.Packets.ServerPackets;
 using CompCube_Models.Models.Packets.UserPackets;
 using CompCube_Server.Interfaces;
-using CompCube.Models;
 
 namespace CompCube_Server.Networking.Client;
 
@@ -15,9 +14,9 @@ public class ConnectedClient(ILogger<ConnectedClient> logger) : IConnectedClient
     private WebSocket _client;
     private TaskCompletionSource _socketFinishedTcs;
 
-    public event Action<PlayerDiscardedMapsMessage, IConnectedClient>? OnUserDiscardedMaps;
-    public event Action<PlayerSelectedMapMessage, IConnectedClient>? OnMapSelection;
-    public event Action<ScoreSubmission, IConnectedClient>? OnScoreSubmission;
+    public event Action<DiscardMapsPacket, IConnectedClient>? OnUserDiscardedMaps;
+    public event Action<MapSelectionPacket, IConnectedClient>? OnMapSelection;
+    public event Action<ScoreSubmissionPacket, IConnectedClient>? OnScoreSubmission;
     public event Action<IConnectedClient>? OnDisconnected;
 
     private UserInfo? _userInfo;

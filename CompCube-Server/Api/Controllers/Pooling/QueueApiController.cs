@@ -1,7 +1,7 @@
-﻿using CompCube_Server.Config;
+﻿using CompCube_Models.Models.Map;
+using CompCube_Server.Config;
 using CompCube_Server.Data;
 using CompCube_Server.Discord;
-using CompCube.Models;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CompCube_Server.Api.Controllers.Pooling;
