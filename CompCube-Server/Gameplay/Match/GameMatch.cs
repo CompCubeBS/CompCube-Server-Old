@@ -1,15 +1,8 @@
-﻿using System.Reflection.Metadata;
-using CompCube_Models.Models.ClientData;
-using CompCube_Models.Models.Map;
-using CompCube_Models.Models.Match;
-using CompCube_Models.Models.Packets;
-using CompCube_Models.Models.Packets.ServerPackets;
-using CompCube_Models.Models.Packets.UserPackets;
-using CompCube_Server.Gameplay.Match.Dealer;
+﻿using CompCube_Server.Gameplay.Match.Dealer;
 using CompCube_Server.Interfaces;
 using CompCube_Server.Data;
 using CompCube_Server.Gameplay.Matchmaking;
-using Microsoft.Extensions.Logging.Abstractions;
+using CompCube.Models;
 
 namespace CompCube_Server.Gameplay.Match;
 
@@ -158,7 +151,7 @@ public class GameMatch(MapData mapData, ILogger<GameMatch> logger, RankingData r
             var redScore = client.IsRed ? score : _cachedScore;
             var blueScore = !client.IsRed ? score : _cachedScore;
         
-            var difference = Math.Abs(score.RelativeScore - _cachedScore.RelativeScore);
+            var difference = Math.Abs(score.Accuracy - _cachedScore.Accuracy);
         
             var loser = redScore.Points > blueScore.Points ? _blue : _red;
         
@@ -299,15 +292,15 @@ public class ClientManager
         
         ConnectedClient.OnUserDiscardedMaps += HandleUserFinishedDiscarding;
         
-        await ConnectedClient.SendPacket(new MatchCreatedPacket(red, blue, AvailablePicks.ToArray()));
+        // await ConnectedClient.SendPacket(new MatchCreatedMessage(red, blue, AvailablePicks.ToArray()));
     }
 
     public async Task SendRoundResults(Score red, Score blue, float redHealth, float blueHealth)
     {
-        await ConnectedClient.SendPacket(new RoundResultsPacket(red, blue, redHealth, blueHealth));
+        // await ConnectedClient.SendPacket(new RoundResultsMessage(red, blue, redHealth, blueHealth));
     }
 
-    private async void HandleUserFinishedDiscarding(DiscardMapsPacket packet, IConnectedClient client)
+    private async void HandleUserFinishedDiscarding(PlayerDiscardedMapsMessage packet, IConnectedClient client)
     {
         try
         {
@@ -321,7 +314,7 @@ public class ClientManager
             _availablePicks = _dealer.CompleteDeck(_availablePicks.ToArray(), 5).ToList();
             OnClientFinishedDiscarding?.Invoke(this);
 
-            await ConnectedClient.SendPacket(new UpdateCardsPacket(_availablePicks.ToArray()));
+            // await ConnectedClient.SendPacket(new CardsUpdatedMessage(_availablePicks.ToArray()));
         }
         catch (Exception e)
         {
@@ -333,14 +326,14 @@ public class ClientManager
     {
         ConnectedClient.OnScoreSubmission += HandleClientDidSubmitScore;
         
-        await ConnectedClient.SendPacket(new PlayerSelectedMapPacket(map));
+        // await ConnectedClient.SendPacket(new PlayerSelectedMapMessage(map));
     }
 
-    private void HandleClientDidSubmitScore(ScoreSubmissionPacket packet, IConnectedClient client)
+    private void HandleClientDidSubmitScore(ScoreSubmission packet, IConnectedClient client)
     {
         client.OnScoreSubmission -= HandleClientDidSubmitScore;
         
-        OnClientSubmittedScore?.Invoke(packet.GetScore(), this);
+        // OnClientSubmittedScore?.Invoke(packet, this);
     }
 
     public async Task StartPickPhaseForClient(bool isPicking, float multiplier)
@@ -348,16 +341,16 @@ public class ClientManager
         if (isPicking)
             ConnectedClient.OnMapSelection += HandleClientSelectedMap;
         
-        await ConnectedClient.SendPacket(new StartPickPhasePacket(AvailablePicks.ToArray(), isPicking, multiplier));
+        // await ConnectedClient.SendPacket(new PickPhaseMessage(AvailablePicks.ToArray(), isPicking, multiplier));
     }
 
-    private void HandleClientSelectedMap(MapSelectionPacket packet, IConnectedClient client)
+    private void HandleClientSelectedMap(PlayerSelectedMapMessage packet, IConnectedClient client)
     {
         client.OnMapSelection -= HandleClientSelectedMap;
 
-        _availablePicks.Remove(packet.Selection);
+        _availablePicks.Remove(packet.Map);
         
-        OnDidPickMap?.Invoke(packet.Selection, this);
+        OnDidPickMap?.Invoke(packet.Map, this);
         
         ConnectedClient.OnScoreSubmission += HandleClientDidSubmitScore;
     }
@@ -369,7 +362,7 @@ public class ClientManager
 
     public async Task EndMatchForClient(int eloChange, bool won)
     {
-        await ConnectedClient.SendPacket(new MatchFinishedPacket(eloChange, won));
+        // await ConnectedClient.SendPacket(new MatchFinishedMessage(eloChange, won ? "win" : "lose"));
         await ConnectedClient.Disconnect();
     }
 

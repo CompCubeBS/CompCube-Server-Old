@@ -1,4 +1,4 @@
-﻿using CompCube_Models.Models.Map;
+﻿using CompCube.Models;
 
 namespace CompCube_Server.Data;
 

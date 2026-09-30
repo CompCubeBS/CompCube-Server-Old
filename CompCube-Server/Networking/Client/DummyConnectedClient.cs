@@ -1,9 +1,6 @@
-﻿using CompCube_Models.Models.ClientData;
-using CompCube_Models.Models.Packets;
-using CompCube_Models.Models.Packets.ServerPackets;
-using CompCube_Models.Models.Packets.UserPackets;
-using CompCube_Server.Data;
+﻿\using CompCube_Server.Data;
 using CompCube_Server.Interfaces;
+using CompCube.Models;
 
 namespace CompCube_Server.Networking.Client;
 

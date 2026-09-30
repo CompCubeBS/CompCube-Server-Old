@@ -1,6 +1,5 @@
-﻿using CompCube_Models.Models.ClientData;
-using CompCube_Models.Models.Match;
-using CompCube_Server.Config;
+﻿using CompCube_Server.Config;
+using CompCube.Models;
 
 namespace CompCube_Server.Data;
 

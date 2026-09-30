@@ -1,6 +1,6 @@
 ﻿using BeatSaverSharp.Models;
-using CompCube_Models.Models.Map;
 using CompCube_Server.Api.BeatSaver;
+using CompCube.Models;
 using NetCord;
 using NetCord.Rest;
 

@@ -1,12 +1,12 @@
-﻿using CompCube_Models.Models.Server;
+﻿using CompCube.Models;
 
 namespace CompCube_Server.Networking.ServerStatus;
 
 public class ServerStatusManager(IConfiguration config)
 {
-    private ServerState.State _state = ServerState.State.Online;
+    private ServerState _state = ServerState.Online;
 
-    public ServerState.State State
+    public ServerState State
     {
         get => _state;
         set
@@ -16,9 +16,9 @@ public class ServerStatusManager(IConfiguration config)
         }
     }
     
-    public event Action<ServerState.State>? OnStateChanged;
+    public event Action<ServerState>? OnStateChanged;
 
-    public CompCube_Models.Models.Server.ServerStatus GetServerStatus()
+    public CompCube.Models.ServerStatus GetServerStatus()
     {
         var serverSection = config.GetSection("Gameplay");
 
@@ -32,6 +32,6 @@ public class ServerStatusManager(IConfiguration config)
         if (allowedModVersions == null)
             throw new Exception("Could not parse allowed mod versions!");
         
-        return new CompCube_Models.Models.Server.ServerStatus(allowedGameVersions, allowedModVersions, State);
+        return new CompCube.Models.ServerStatus(allowedGameVersions, allowedModVersions, State);
     }
 }
