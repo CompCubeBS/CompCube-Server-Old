@@ -1,7 +1,7 @@
-﻿using CompCube_Server.Api.BeatSaver;
+﻿using CompCube_Models.Models.Map;
+using CompCube_Server.Api.BeatSaver;
 using CompCube_Server.Config;
 using CompCube_Server.Data;
-using CompCube.Models;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
 

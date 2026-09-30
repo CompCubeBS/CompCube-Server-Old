@@ -1,5 +1,8 @@
 ﻿using System.Net.WebSockets;
 using System.Text;
+using CompCube_Models.Models.Packets;
+using CompCube_Models.Models.Packets.ServerPackets;
+using CompCube_Models.Models.Packets.UserPackets;
 using CompCube_Server.Config;
 using CompCube_Server.Data;
 using CompCube_Server.Interfaces;
@@ -42,7 +45,7 @@ public partial class ConnectionManager(
         
         if (_connectedClients.Any(i => i.UserInfo.UserId == userId))
         {
-            // await websocket.SendAsync(new ArraySegment<byte>(new AbruptDisconnectionPacket("You are logged in from another location!").SerializeToBytes()), WebSocketMessageType.Text, true, CancellationToken.None);
+            await websocket.SendAsync(new ArraySegment<byte>(new AbruptDisconnectionPacket("You are logged in from another location!").SerializeToBytes()), WebSocketMessageType.Text, true, CancellationToken.None);
             await websocket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "", CancellationToken.None);
             return;
         }

@@ -1,4 +1,7 @@
-﻿namespace CompCube_Server.Interfaces;
+﻿using CompCube_Models.Models.Match;
+using CompCube_Server.Gameplay.Match;
+
+namespace CompCube_Server.Interfaces;
 
 public interface IQueue
 {

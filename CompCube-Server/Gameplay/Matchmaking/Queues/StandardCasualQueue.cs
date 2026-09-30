@@ -1,4 +1,5 @@
-﻿using CompCube_Server.Gameplay.Match;
+﻿using CompCube_Models.Models.Match;
+using CompCube_Server.Gameplay.Match;
 using CompCube_Server.Interfaces;
 using CompCube_Server.Models.Client;
 using CompCube_Server.Networking.Client;

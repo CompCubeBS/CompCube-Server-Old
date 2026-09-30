@@ -1,7 +1,7 @@
 ﻿using System.Net.WebSockets;
+using CompCube_Models.Models.ClientData;
 using CompCube_Server.Interfaces;
 using CompCube_Server.Networking.Client;
-using CompCube.Models;
 
 namespace CompCube_Server.Gameplay.Matchmaking;
 

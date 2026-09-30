@@ -1,6 +1,6 @@
-﻿using CompCube_Server.Api.BeatSaver;
+﻿using CompCube_Models.Models.Map;
+using CompCube_Server.Api.BeatSaver;
 using CompCube_Server.Data;
-using CompCube.Models;
 using NetCord;
 using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
