@@ -2,14 +2,15 @@ namespace CompCube_Server.Data.Schema;
 
 public class CompetetiveStatistics
 {
-    public string Guid { get; set; }
-    public User User { get; set; }
+    public required string Guid { get; set; }
+    public required User User { get; set; }
+    public required string UserGuid { get; set; }
 
-    public int Season { get; set; }
+    public required int Season { get; set; }
 
-    public int CurrentElo { get; set; } = 1000;
-    public int Wins { get; set; } = 0;
-    public int TotalGamesPlayed { get; set; } = 0;
-    public int WinStreak { get; set; } = 0;
-    public int BestWinStreak { get; set; } = 0;
+    public required int Elo { get; set; } = 1000;
+    public required int Wins { get; set; } = 0;
+    public required int TotalGamesPlayed { get; set; } = 0;
+    public required int WinStreak { get; set; } = 0;
+    public required int BestWinStreak { get; set; } = 0;
 }

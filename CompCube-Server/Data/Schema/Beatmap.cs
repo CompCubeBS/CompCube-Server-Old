@@ -10,4 +10,8 @@ public class Beatmap
     public VotingMap.Category Category { get; set; }
     public VotingMap.DifficultyType Difficulty { get; set; }
     public int DurationSeconds { get; set; }
+    
+    public List<Pool> Pools { get; set; } = [];
+    
+    public List<Score> Scores { get; set; } = [];
 }
