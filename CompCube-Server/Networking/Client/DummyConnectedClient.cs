@@ -1,4 +1,5 @@
 ﻿using CompCube_Models.Models.ClientData;
+using CompCube_Models.Models.Match;
 using CompCube_Models.Models.Packets;
 using CompCube_Models.Models.Packets.ServerPackets;
 using CompCube_Models.Models.Packets.UserPackets;
@@ -47,7 +48,7 @@ public class DummyConnectedClient(MapData mapData) : IConnectedClient
                 OnUserDiscardedMaps?.Invoke(new DiscardMapsPacket([]), this);
                 break;
             case ServerPacket.ServerPacketTypes.PlayerSelectedMap:
-                OnScoreSubmission?.Invoke(new ScoreSubmissionPacket(200000, 1000000, true, 0, false), this);
+                OnScoreSubmission?.Invoke(new ScoreSubmissionPacket(Score.Empty), this);
                 // await Task.Delay(3500);
                 // Disconnect();
                 break;
@@ -58,7 +59,7 @@ public class DummyConnectedClient(MapData mapData) : IConnectedClient
                     await Task.Delay(15000);
                     OnMapSelection?.Invoke(new MapSelectionPacket(mapData.GetAllMaps().First()), this);
                     await Task.Delay(5000);
-                    OnScoreSubmission?.Invoke(new ScoreSubmissionPacket(200000, 1000000, true, 0, false), this);
+                    OnScoreSubmission?.Invoke(new ScoreSubmissionPacket(Score.Empty), this);
                 }
                 break;
         }

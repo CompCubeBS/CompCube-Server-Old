@@ -340,7 +340,7 @@ public class ClientManager
     {
         client.OnScoreSubmission -= HandleClientDidSubmitScore;
         
-        OnClientSubmittedScore?.Invoke(packet.GetScore(), this);
+        OnClientSubmittedScore?.Invoke(packet.Score, this);
     }
 
     public async Task StartPickPhaseForClient(bool isPicking, float multiplier)
