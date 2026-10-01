@@ -88,7 +88,7 @@ public class StandardCompetitiveQueue : StandardQueue
     {
         _logger.LogInformation("Running matchmaking pass.");
         var sorted = _clientPool
-            .OrderBy(c => c.Client.UserStatistics.Mmr)
+            .OrderBy(c => c.Client.UserStatistics.Elo)
             .ToList();
 
         for (int i = 0; i < sorted.Count - 1;)
