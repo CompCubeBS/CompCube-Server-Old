@@ -16,11 +16,11 @@ public class DummyConnectedClient(MapData mapData) : IConnectedClient
     public event Action<IConnectedClient>? OnDisconnected;
 
     public bool IsConnectionAlive => true;
-    public UserInfo UserInfo => _userInfo ?? throw new Exception("Debug client accessed before initialization!");
+    public UserStatistics UserStatistics => _userInfo ?? throw new Exception("Debug client accessed before initialization!");
     
-    private UserInfo? _userInfo;
+    private UserStatistics? _userInfo;
 
-    public void Init(UserInfo userInfo)
+    public void Init(UserStatistics userInfo)
     {
         _userInfo = userInfo;
     }

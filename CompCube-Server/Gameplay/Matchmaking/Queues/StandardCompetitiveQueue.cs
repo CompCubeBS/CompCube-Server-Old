@@ -88,7 +88,7 @@ public class StandardCompetitiveQueue : StandardQueue
     {
         _logger.LogInformation("Running matchmaking pass.");
         var sorted = _clientPool
-            .OrderBy(c => c.Client.UserInfo.Mmr)
+            .OrderBy(c => c.Client.UserStatistics.Mmr)
             .ToList();
 
         for (int i = 0; i < sorted.Count - 1;)
@@ -99,12 +99,12 @@ public class StandardCompetitiveQueue : StandardQueue
             if (!a.CanMatchWithOtherClient(b))
             {
                 i++;
-                _logger.LogInformation("Clients {UserInfoUsername} and {Username} cannot be matched yet. Skipping.", a.Client.UserInfo.Username, b.Client.UserInfo.Username);
+                _logger.LogInformation("Clients {UserInfoUsername} and {Username} cannot be matched yet. Skipping.", a.Client.UserStatistics.Username, b.Client.UserStatistics.Username);
                 continue;
             }
 
 
-            _logger.LogInformation("Matching clients {UserInfoUsername} and {Username} with MMRs {UserInfoMmr} and {Mmr}.", a.Client.UserInfo.Username, b.Client.UserInfo.Username, a.Client.UserInfo.Mmr, b.Client.UserInfo.Mmr);
+            _logger.LogInformation("Matching clients {UserInfoUsername} and {Username} with MMRs {UserInfoMmr} and {Mmr}.", a.Client.UserStatistics.Username, b.Client.UserStatistics.Username, a.Client.UserStatistics.Mmr, b.Client.UserStatistics.Mmr);
 
             _clientPool.Remove(a);
             _clientPool.Remove(b);

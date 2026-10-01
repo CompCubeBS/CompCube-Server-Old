@@ -43,7 +43,7 @@ public partial class ConnectionManager(
         var userId = userIdHeader.First() ?? throw new Exception("No UserId!");
         var username = usernameHeader.First() ?? throw new Exception("No UserName!");
         
-        if (_connectedClients.Any(i => i.UserInfo.UserId == userId))
+        if (_connectedClients.Any(i => i.UserStatistics.PlatformId == userId))
         {
             await websocket.SendAsync(new ArraySegment<byte>(new AbruptDisconnectionPacket("You are logged in from another location!").SerializeToBytes()), WebSocketMessageType.Text, true, CancellationToken.None);
             await websocket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "", CancellationToken.None);
@@ -97,7 +97,7 @@ public partial class ConnectionManager(
         client.OnDisconnected -= OnDisconnected;
         
         _connectedClients.Remove(client);
-        LogUserinfousernameUserinfouseridDisconnected(logger, client.UserInfo.Username, client.UserInfo.UserId);
+        LogUserinfousernameUserinfouseridDisconnected(logger, client.UserStatistics.Username, client.UserStatistics.PlatformId);
     }
 
     [LoggerMessage(LogLevel.Information, "{userName} ({userId}) joined queue {queue}")]

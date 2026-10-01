@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CompCube_Server.Data;
 
-public class CompCubeDbContext(DbContextOptions<CompCubeDbContext> options) : DbContext(options)
+public class DataContext(DbContextOptions<DataContext> options) : DbContext(options)
 {
     public DbSet<Beatmap> Beatmaps => Set<Beatmap>();
     public DbSet<CompetetiveStatistics> CompetetiveStatistics => Set<CompetetiveStatistics>();
