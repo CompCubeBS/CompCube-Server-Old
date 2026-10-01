@@ -10,6 +10,7 @@
     <ItemGroup>
         <PackageReference Include="BeatSaverSharper" Version="3.4.5" />
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.15"/>
+        <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.12" />
         <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.0-preview.6.25358.103" />
         <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.0-preview.6.25358.103" />
         <PackageReference Include="MySqlConnector" Version="2.6.1" />
@@ -24,6 +25,10 @@
       <Reference Include="System.Net.Primitives">
         <HintPath>..\..\..\.dotnet\packs\Microsoft.NETCore.App.Ref\8.0.13\ref\net8.0\System.Net.Primitives.dll</HintPath>
       </Reference>
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Data\" />
     </ItemGroup>
 
 </Project>
