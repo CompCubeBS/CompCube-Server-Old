@@ -1,12 +1,8 @@
 ﻿using System.Net.WebSockets;
-using System.Text;
-using CompCube_Models.Models.Packets;
 using CompCube_Models.Models.Packets.ServerPackets;
-using CompCube_Models.Models.Packets.UserPackets;
 using CompCube_Server.Config;
 using CompCube_Server.Data;
 using CompCube_Server.Interfaces;
-using CompCube_Server.Networking.Client;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CompCube_Server.Gameplay.Matchmaking;
@@ -35,7 +31,8 @@ public partial class ConnectionManager(
         var websocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
 
         if (!HttpContext.Request.Headers.TryGetValue("UserId", out var userIdHeader) || 
-            !HttpContext.Request.Headers.TryGetValue("UserName", out var usernameHeader))
+            !HttpContext.Request.Headers.TryGetValue("UserName", out var usernameHeader) || 
+            !HttpContext.Request.Headers.TryGetValue("AvatarUrl", out var avatarUrlHeader))
         {
             HttpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
             return;
@@ -43,6 +40,7 @@ public partial class ConnectionManager(
         
         var userId = userIdHeader.First() ?? throw new Exception("No UserId!");
         var username = usernameHeader.First() ?? throw new Exception("No UserName!");
+        var avatarUrl = avatarUrlHeader.First() ?? throw new Exception("No Avatar Url!");
         
         if (_connectedClients.Any(i => i.UserStatistics.PlatformId == userId))
         {
@@ -53,7 +51,7 @@ public partial class ConnectionManager(
         
         var tcs = new TaskCompletionSource();
 
-        var userInfo = userData.UpdateUserOnLogin(userId, username);
+        var userInfo = userData.UpdateUserOnLogin(userId, username, avatarUrl);
 
         var connectedClient = clientFactory.Create(userInfo, websocket, tcs);
         
