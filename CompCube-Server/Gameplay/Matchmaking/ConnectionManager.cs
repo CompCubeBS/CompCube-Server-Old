@@ -34,7 +34,8 @@ public partial class ConnectionManager(
 
         var websocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
 
-        if (!HttpContext.Request.Headers.TryGetValue("UserId", out var userIdHeader) || !HttpContext.Request.Headers.TryGetValue("UserName", out var usernameHeader))
+        if (!HttpContext.Request.Headers.TryGetValue("UserId", out var userIdHeader) || 
+            !HttpContext.Request.Headers.TryGetValue("UserName", out var usernameHeader))
         {
             HttpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
             return;
@@ -52,7 +53,7 @@ public partial class ConnectionManager(
         
         var tcs = new TaskCompletionSource();
 
-        var userInfo = userData.UpdateUserDataOnLogin(userId, username);
+        var userInfo = userData.UpdateUserOnLogin(userId, username);
 
         var connectedClient = clientFactory.Create(userInfo, websocket, tcs);
         

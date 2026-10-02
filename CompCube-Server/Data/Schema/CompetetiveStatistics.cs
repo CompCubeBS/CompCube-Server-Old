@@ -2,9 +2,9 @@ namespace CompCube_Server.Data.Schema;
 
 public class CompetetiveStatistics
 {
-    public required string Guid { get; set; }
+    public string Guid { get; set; }
     public required User User { get; set; }
-    public required string UserGuid { get; set; }
+    public string UserGuid { get; set; }
 
     public required int Season { get; set; }
 

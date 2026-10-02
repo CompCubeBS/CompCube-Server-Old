@@ -4,13 +4,13 @@ public class User
 {
     public string Guid { get; set; }
     
-    public string BeatKhanaGuid { get; set; }
-    public string PlatformId { get; set; }
+    public string? BeatKhanaGuid { get; set; }
+    public required string PlatformId { get; set; }
     
-    public string Username { get; set; }
-    public string AvatarUrl { get; set; }
-    
-    public bool Banned { get; set; }
+    public required string Username { get; set; }
+    public required string AvatarUrl { get; set; }
+
+    public required bool Banned { get; set; } = false;
     
     public string? FlairGuid { get; set; }
     

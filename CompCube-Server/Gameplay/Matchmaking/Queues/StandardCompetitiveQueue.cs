@@ -104,7 +104,7 @@ public class StandardCompetitiveQueue : StandardQueue
             }
 
 
-            _logger.LogInformation("Matching clients {UserInfoUsername} and {Username} with MMRs {UserInfoMmr} and {Mmr}.", a.Client.UserStatistics.Username, b.Client.UserStatistics.Username, a.Client.UserStatistics.Mmr, b.Client.UserStatistics.Mmr);
+            _logger.LogInformation("Matching clients {UserInfoUsername} and {Username} with MMRs {UserInfoMmr} and {Mmr}.", a.Client.UserStatistics.Username, b.Client.UserStatistics.Username, a.Client.UserStatistics.Elo, b.Client.UserStatistics.Elo);
 
             _clientPool.Remove(a);
             _clientPool.Remove(b);
