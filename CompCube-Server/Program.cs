@@ -102,6 +102,7 @@ public class Program
         services.AddSingleton<ConfigHelper>();
 
         services.AddSingleton<UserData>();
+        services.AddSingleton<MapData>();
         
         services.AddSingleton<ServerStatusManager>();
         

@@ -13,7 +13,7 @@ public class ListMapsCommand(MapData mapData, BeatSaverApiWrapper beatSaver, Map
     [SlashCommand("maps", "Shows all active and playable maps.", Contexts = [InteractionContextType.Guild])]
     public async Task<InteractionMessageProperties> ShowMaps()
     {
-        var maps = mapData.GetAllMaps().OrderBy(i => i.MapCategory);
+        var maps = mapData.GetAllMapsFromActiveBatches().OrderBy(i => i.MapCategory);
 
         return new InteractionMessageProperties()
         {

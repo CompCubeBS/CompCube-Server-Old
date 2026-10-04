@@ -3,6 +3,8 @@
 public class ConfigHelper(IConfiguration config)
 {
     public int Season => config.GetSection("Gameplay").GetValue("Season", 0);
+    
+    public int[] ActivePools => config.GetSection("Server").GetSection("ActivePools").Get<int[]>() ?? throw new Exception("ActivePools not present in appsettings.json!");
 
     public string Secret => config.GetSection("Api").GetValue<string>("Secret")!;
     

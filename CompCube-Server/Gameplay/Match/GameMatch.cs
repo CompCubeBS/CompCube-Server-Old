@@ -13,7 +13,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 namespace CompCube_Server.Gameplay.Match;
 
-public class GameMatch(MapData mapData, ILogger<GameMatch> logger, RankingData rankingData, TimeoutManager timeoutManager)
+public class GameMatch(MapData mapData, ILogger<GameMatch> logger, TimeoutManager timeoutManager, UserData userData)
 {
     private MatchSettings _matchSettings;
 
@@ -198,14 +198,14 @@ public class GameMatch(MapData mapData, ILogger<GameMatch> logger, RankingData r
 
     private void ApplyEloChanges(ClientManager winner, ClientManager loser, int eloChange)
     {
-        rankingData.AdjustMmr(winner.ConnectedClient.UserStatistics.PlatformId, eloChange);
-        rankingData.AdjustMmr(loser.ConnectedClient.UserStatistics.PlatformId, -eloChange);
+        userData.AdjustElo(winner.ConnectedClient.UserStatistics.PlatformId, eloChange);
+        userData.AdjustElo(loser.ConnectedClient.UserStatistics.PlatformId, -eloChange);
         
-        rankingData.IncrementTotalGames(winner.ConnectedClient.UserStatistics);
-        rankingData.IncrementTotalGames(loser.ConnectedClient.UserStatistics);
+        userData.IncrementTotalGames(winner.ConnectedClient.UserStatistics.PlatformId);
+        userData.IncrementTotalGames(loser.ConnectedClient.UserStatistics.PlatformId);
         
-        rankingData.IncrementWins(winner.ConnectedClient.UserStatistics);
-        rankingData.ResetWinstreak(winner.ConnectedClient.UserStatistics);
+        userData.IncrementWins(winner.ConnectedClient.UserStatistics.PlatformId);
+        userData.ResetWinstreak(winner.ConnectedClient.UserStatistics.PlatformId);
     }
 
     private ClientManager GetOtherClient(ClientManager client)

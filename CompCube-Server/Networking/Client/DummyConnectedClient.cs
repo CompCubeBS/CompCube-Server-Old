@@ -57,7 +57,7 @@ public class DummyConnectedClient(MapData mapData) : IConnectedClient
                 if (pickPhasePacket!.IsOwnPick)
                 {
                     await Task.Delay(15000);
-                    OnMapSelection?.Invoke(new MapSelectionPacket(mapData.GetAllMaps().First()), this);
+                    OnMapSelection?.Invoke(new MapSelectionPacket(mapData.GetAllMapsFromActiveBatches().First()), this);
                     await Task.Delay(5000);
                     OnScoreSubmission?.Invoke(new ScoreSubmissionPacket(Score.Empty), this);
                 }

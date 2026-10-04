@@ -2,11 +2,26 @@ using CompCube_Models.Models.ClientData;
 using CompCube_Server.Config;
 using CompCube_Server.Data.Schema;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace CompCube_Server.Data;
 
 public class UserData(DataContext context, ConfigHelper configHelper)
 {
+    public UserStatistics Debug => new UserStatistics("debug", 
+        "0", 
+        null, 
+        "https://cdn.scoresaber.com/avatars/oculus.png?v=1781213201",
+        null,
+        false,
+        0,
+        1000,
+        0,
+        0,
+        0,
+        0
+        );
+    
     public List<UserStatistics>? GetAroundUser(string platformId, int season = -1)
     {
         if (season == -1)
@@ -61,7 +76,7 @@ public class UserData(DataContext context, ConfigHelper configHelper)
 
                 user = context.Users.Include(p => p.CompetetiveStatistics).First(p => p.PlatformId == platformId);
 
-                CreateNewCompetitiveStatistics(user);
+                CreateNewCompetitiveStatisticsIfNotExists(user.PlatformId);
 
                 context.SaveChanges();
 
@@ -72,7 +87,7 @@ public class UserData(DataContext context, ConfigHelper configHelper)
             user.AvatarUrl = avatarUrl;
             user.Username = username;
             
-            CreateNewCompetitiveStatistics(user);
+            CreateNewCompetitiveStatisticsIfNotExists(user.PlatformId);
 
             context.SaveChanges();
             transaction.Commit();
@@ -81,24 +96,151 @@ public class UserData(DataContext context, ConfigHelper configHelper)
         }
         catch (Exception e)
         {
+            transaction.Rollback();
             throw new Exception($"Failed to create user info for {platformId}: {e.Message}");
         }
+    }
 
-        void CreateNewCompetitiveStatistics(User userToCreateFor)
+    private void CreateNewCompetitiveStatisticsIfNotExists(string platformId)
+    {
+        var userToCreateFor = context.Users
+            .Include(i => i.CompetetiveStatistics)
+            .FirstOrDefault(i => i.PlatformId == platformId);
+
+        if (userToCreateFor == null)
+            return;
+
+        if (userToCreateFor.CompetetiveStatistics.Any(i => i.Season == configHelper.Season))
+            return;
+
+        context.CompetetiveStatistics.Add(new CompetetiveStatistics()
         {
-            if (userToCreateFor.CompetetiveStatistics.Any(i => i.Season == configHelper.Season))
+            BestWinStreak = 0,
+            Elo = 1000,
+            Season = configHelper.Season,
+            TotalGamesPlayed = 0,
+            WinStreak = 0,
+            Wins = 0,
+            User = userToCreateFor
+        });
+
+        context.SaveChanges();
+    }
+
+    public void IncrementWins(string platformId)
+    {
+        using var transaction = context.Database.BeginTransaction();
+
+        try
+        {
+            var user = context.Users
+                .Include(i => i.CompetetiveStatistics)
+                .FirstOrDefault(i => i.PlatformId == platformId);
+
+            if (user == null)
                 return;
             
-            context.CompetetiveStatistics.Add(new CompetetiveStatistics()
+            var stats = user.CompetetiveStatistics.First(i => i.Season == configHelper.Season);
+
+            stats.WinStreak++;
+            context.SaveChanges();
+
+            stats.Wins++;
+            context.SaveChanges();
+            
+            if (stats.WinStreak > stats.BestWinStreak)
             {
-                BestWinStreak = 0,
-                Elo = 1000,
-                Season = configHelper.Season,
-                TotalGamesPlayed = 0,
-                WinStreak = 0,
-                Wins = 0,
-                User = user
-            });
+                stats.BestWinStreak = stats.WinStreak;
+                context.SaveChanges();
+            }
+
+            transaction.Commit();
+        }
+        catch (Exception e)
+        {
+            transaction.Rollback();
+            throw new Exception($"Failed to increment wins for {platformId}: {e.Message}");
+        }
+    }
+
+    public void AdjustElo(string platformId, int eloChange)
+    {
+        using var transaction = context.Database.BeginTransaction();
+        
+        try
+        {
+            var user = context.Users
+                .Include(i => i.CompetetiveStatistics)
+                .FirstOrDefault(i => i.PlatformId == platformId);
+
+            if (user == null)
+                return;
+            
+            var stats = user.CompetetiveStatistics.First(i => i.Season == configHelper.Season);
+
+            stats.Elo += eloChange;
+            context.SaveChanges();
+
+            transaction.Commit();
+        }
+        catch (Exception e)
+        {
+            transaction.Rollback();
+            throw new Exception($"Failed to increment wins for {platformId}: {e.Message}");
+        }
+    }
+
+    public void ResetWinstreak(string platformId)
+    {
+        using var transaction = context.Database.BeginTransaction();
+
+        try
+        {
+            var user = context.Users
+                .Include(i => i.CompetetiveStatistics)
+                .FirstOrDefault(i => i.PlatformId == platformId);
+
+            if (user == null)
+                return;
+            
+            var stats = user.CompetetiveStatistics.First(i => i.Season == configHelper.Season);
+
+            stats.WinStreak = 0;
+            context.SaveChanges();
+
+            transaction.Commit();
+        }
+        catch (Exception e)
+        {
+            transaction.Rollback();
+            throw new Exception($"Failed to increment wins for {platformId}: {e.Message}");
+        }
+    }
+
+    public void IncrementTotalGames(string platformId)
+    {
+        using var transaction = context.Database.BeginTransaction();
+
+        try
+        {
+            var user = context.Users
+                .Include(i => i.CompetetiveStatistics)
+                .FirstOrDefault(i => i.PlatformId == platformId);
+
+            if (user == null)
+                return;
+
+            user.CompetetiveStatistics
+                .First(i => i.Season == configHelper.Season)
+                .TotalGamesPlayed++;
+
+            context.SaveChanges();
+            transaction.Commit();
+        }
+        catch (Exception e)
+        {
+            transaction.Rollback();
+            throw new Exception($"Failed to increment total games for {platformId}:" + e.Message);
         }
     }
     
