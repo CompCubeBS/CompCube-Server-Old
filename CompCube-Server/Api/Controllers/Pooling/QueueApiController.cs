@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace CompCube_Server.Api.Controllers.Pooling;
 
 [ApiController]
-public class QueueApiController(ConfigHelper helper, MapQueue queue) : ControllerBase
+public class QueueApiController(ConfigHelper helper, BeatmapPoolData queue) : ControllerBase
 {
     [HttpGet("/api/queue")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -31,7 +31,7 @@ public class QueueApiController(ConfigHelper helper, MapQueue queue) : Controlle
         var maps = queue.GetMaps().Take(count);
         
         foreach (var map in maps)
-            queue.RemoveFromQueueAndAdd(map, batch);
+            queue.AssignBatch(map.Guid, batch);
 
         return Ok();
     }

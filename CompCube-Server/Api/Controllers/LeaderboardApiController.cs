@@ -15,13 +15,13 @@ public class LeaderboardApiController(UserData userData) : ControllerBase
     [HttpGet("/api/leaderboard/aroundUser/{userId}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public ActionResult<UserInfo[]> GetAroundUser(string userId)
+    public ActionResult<UserStatistics[]> GetAroundUser(string userId)
     {
         var aroundUser = userData.GetAroundUser(userId);
 
         if (aroundUser == null)
             return NotFound();
 
-        return aroundUser;
+        return aroundUser.ToArray();
     }
 }

@@ -62,12 +62,8 @@ public class DataContext(DbContextOptions<DataContext> options) : DbContext(opti
         modelBuilder.Entity<Pool>(entity =>
         { 
             entity.ToTable("pools");
-            
-            entity.HasKey(p => p.Guid);
-            entity.Property(p => p.Guid).HasDefaultValueSql("NEWID()");
-            
-            entity.Property(p => p.Id).IsRequired();
-            entity.HasIndex(p => p.Id).IsUnique();
+
+            entity.HasKey(p => p.Id);
         });
 
         modelBuilder.Entity<Queue>(entity =>

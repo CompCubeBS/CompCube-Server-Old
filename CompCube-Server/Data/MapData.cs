@@ -14,7 +14,7 @@ public class MapData(DataContext context, ConfigHelper helper)
 
         foreach (var pool in pools)
         {
-            maps = maps.Concat(pool.Maps.Select(i => new VotingMap(i.Hash, i.Difficulty, i.Category))).ToList();
+            maps = maps.Concat(pool.Maps.Select(i => new VotingMap(i.Guid, i.Hash, i.Difficulty, i.Category))).ToList();
         }
 
         return maps;

@@ -103,6 +103,7 @@ public class Program
 
         services.AddSingleton<UserData>();
         services.AddSingleton<MapData>();
+        services.AddSingleton<BeatmapPoolData>();
         
         services.AddSingleton<ServerStatusManager>();
         

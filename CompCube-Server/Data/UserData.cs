@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Storage;
 
 namespace CompCube_Server.Data;
 
-public class UserData(DataContext context, ConfigHelper configHelper)
+public class UserData(DataContext context, ConfigHelper configHelper, Logger<UserData> logger)
 {
     public UserStatistics Debug => new UserStatistics("debug", 
         "0", 
@@ -96,8 +96,8 @@ public class UserData(DataContext context, ConfigHelper configHelper)
         }
         catch (Exception e)
         {
-            transaction.Rollback();
-            throw new Exception($"Failed to create user info for {platformId}: {e.Message}");
+            logger.LogError(e, $"Failed to create user info for {platformId}");
+            throw;
         }
     }
 
@@ -158,8 +158,8 @@ public class UserData(DataContext context, ConfigHelper configHelper)
         }
         catch (Exception e)
         {
-            transaction.Rollback();
-            throw new Exception($"Failed to increment wins for {platformId}: {e.Message}");
+            logger.LogError(e, $"Failed to increment wins for {platformId}");
+            throw;
         }
     }
 
@@ -185,8 +185,8 @@ public class UserData(DataContext context, ConfigHelper configHelper)
         }
         catch (Exception e)
         {
-            transaction.Rollback();
-            throw new Exception($"Failed to increment wins for {platformId}: {e.Message}");
+            logger.LogError(e, $"Failed to adjust elo for {platformId}");
+            throw;
         }
     }
 
@@ -212,8 +212,8 @@ public class UserData(DataContext context, ConfigHelper configHelper)
         }
         catch (Exception e)
         {
-            transaction.Rollback();
-            throw new Exception($"Failed to increment wins for {platformId}: {e.Message}");
+            logger.LogError(e, $"Failed to reset winstreak for {platformId}");
+            throw;
         }
     }
 
@@ -239,8 +239,8 @@ public class UserData(DataContext context, ConfigHelper configHelper)
         }
         catch (Exception e)
         {
-            transaction.Rollback();
-            throw new Exception($"Failed to increment total games for {platformId}:" + e.Message);
+            logger.LogError(e, $"Failed to increment total games for {platformId}");
+            throw;
         }
     }
     
