@@ -21,6 +21,38 @@ public class UserData(DataContext context, ConfigHelper configHelper, Logger<Use
         0,
         0
         );
+
+    public List<UserStatistics> GetLeaderboardRange(int start, int range, int season = -1)
+    {
+        if (season == -1)
+            season = configHelper.Season;
+
+        return context.Users
+            .Include(p => p.CompetetiveStatistics)
+            .Include(p => p.Flair)
+            .Where(p => p.CompetetiveStatistics.Any(i => i.Season == season))
+            .OrderBy(p => p.CompetetiveStatistics.First(i => i.Season == season).Elo)
+            .Skip(start - 1)
+            .Take(range)
+            .ToArray()
+            .Select(i =>
+            {
+                var stats = i.CompetetiveStatistics.First(j => j.Season == season);
+
+                return new UserStatistics(i.Username, 
+                    i.PlatformId, 
+                    i.BeatKhanaGuid, 
+                    i.AvatarUrl, 
+                    GetFlairFromModel(i.Flair),
+                    i.Banned,
+                    GetRankFromElo(stats.Elo, season),
+                    stats.Elo,
+                    stats.Wins,
+                    stats.TotalGamesPlayed,
+                    stats.WinStreak,
+                    stats.BestWinStreak);
+            }).ToList();
+    }
     
     public List<UserStatistics>? GetAroundUser(string platformId, int season = -1)
     {
@@ -31,6 +63,7 @@ public class UserData(DataContext context, ConfigHelper configHelper, Logger<Use
             .Include(p => p.CompetetiveStatistics)
             .Include(p => p.Flair)
             .Where(p => p.CompetetiveStatistics.Any(i => i.Season == season))
+            .Where(p => !p.Banned)
             .OrderBy(p => p.CompetetiveStatistics.First(i => i.Season == season).Elo).ToArray();
         
         var index = Array.FindIndex(users, u => u.PlatformId == platformId);
@@ -47,7 +80,7 @@ public class UserData(DataContext context, ConfigHelper configHelper, Logger<Use
             var stats = user.CompetetiveStatistics.First(k => k.Season == season);
 
             return new UserStatistics(user.Username, user.PlatformId, user.BeatKhanaGuid, user.AvatarUrl,
-                GetFlairFromModel(user.Flair), user.Banned, GetRankFromElo(stats.Elo), stats.Elo, stats.Wins,
+                GetFlairFromModel(user.Flair), user.Banned, GetRankFromElo(stats.Elo, season), stats.Elo, stats.Wins,
                 stats.TotalGamesPlayed, stats.WinStreak, stats.BestWinStreak);
         }).ToList();
     }
@@ -257,7 +290,7 @@ public class UserData(DataContext context, ConfigHelper configHelper, Logger<Use
             var stats = user.CompetetiveStatistics.First(k => k.Season == season);
 
             return new UserStatistics(user.Username, user.PlatformId, user.BeatKhanaGuid, user.AvatarUrl,
-                GetFlairFromModel(user.Flair), user.Banned, GetRankFromElo(stats.Elo), stats.Elo, stats.Wins,
+                GetFlairFromModel(user.Flair), user.Banned, GetRankFromElo(stats.Elo, season), stats.Elo, stats.Wins,
                 stats.TotalGamesPlayed, stats.WinStreak, stats.BestWinStreak);
         }).ToList();
     }
@@ -284,12 +317,12 @@ public class UserData(DataContext context, ConfigHelper configHelper, Logger<Use
         if (stats == null)
             return null;
 
-        var rank = GetRankFromElo(stats.Elo);
+        var rank = GetRankFromElo(stats.Elo, season);
         
         return new UserStatistics(user.Username, user.PlatformId, user.BeatKhanaGuid, user.AvatarUrl, GetFlairFromModel(user.Flair), user.Banned, rank, stats.Elo, stats.Wins, stats.TotalGamesPlayed, stats.WinStreak, stats.BestWinStreak);
     }
 
-    private int GetRankFromElo(int elo, int season = -1)
+    private int GetRankFromElo(int elo, int season)
     {
         if (season == -1)
             season = configHelper.Season;

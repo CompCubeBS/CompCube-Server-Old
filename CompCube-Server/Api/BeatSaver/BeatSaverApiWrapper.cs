@@ -32,7 +32,7 @@ public class BeatSaverApiWrapper(MapData mapData, ILogger<BeatSaverApiWrapper> l
 
     public async Task DownloadAllMissingBeatmaps()
     {
-        var maps = mapData.GetAllMaps().DistinctBy(m => m.Hash).Select(i => i.Hash).ToArray();
+        var maps = mapData.GetAllMapsFromActiveBatches().DistinctBy(m => m.Hash).Select(i => i.Hash).ToArray();
         foreach (var hash in maps)
         {
             try
