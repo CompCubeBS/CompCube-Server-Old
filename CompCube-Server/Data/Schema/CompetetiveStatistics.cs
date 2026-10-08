@@ -6,10 +6,10 @@ public class CompetetiveStatistics
 {
     [MaxLength(36)]
     [Key]
-    public string Guid { get; set; }
+    public required string Guid { get; set; }
     
     [Required]
-    public User User { get; set; }
+    public required User User { get; set; }
     
     [Required]
     [MaxLength(36)]

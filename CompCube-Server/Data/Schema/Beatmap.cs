@@ -7,7 +7,7 @@ public class Beatmap
 {
     [Key]
     [MaxLength(36)]
-    public string Guid { get; set; }
+    public required string Guid { get; set; }
     
     [Required]
     [MaxLength(64)]

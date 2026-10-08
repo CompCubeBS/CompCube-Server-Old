@@ -8,21 +8,21 @@ public class User
 {
     [Key]
     [MaxLength(36)]
-    public string Guid { get; set; }
+    public required string Guid { get; set; }
 
     public string? BeatKhanaId { get; set; } = null;
     
     [Required]
     [MaxLength(50)]
-    public string PlatformId { get; set; }
+    public required string PlatformId { get; set; }
     
     [Required]
     [MaxLength(50)]
-    public string Username { get; set; }
+    public required string Username { get; set; }
 
     [Required]
     [MaxLength(50)]
-    public string AvatarUrl { get; set; } = "https://cdn.scoresaber.com/avatars/oculus.png?v=1781213201";
+    public required string AvatarUrl { get; set; } = "https://cdn.scoresaber.com/avatars/oculus.png?v=1781213201";
 
     [Required]
     public bool Banned { get; set; } = false;

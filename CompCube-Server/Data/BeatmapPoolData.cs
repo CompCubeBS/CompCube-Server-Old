@@ -74,6 +74,7 @@ public class BeatmapPoolData(IServiceScopeFactory scopeFactory, ILogger<BeatmapP
 
             context.Beatmaps.Add(new Beatmap()
             {
+                Guid = Guid.NewGuid().ToString(),
                 Hash = hash,
                 Difficulty = difficulty,
                 Category = category,

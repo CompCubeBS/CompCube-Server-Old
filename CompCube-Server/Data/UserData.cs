@@ -109,6 +109,7 @@ public class UserData(IServiceScopeFactory scopeFactory, ConfigHelper configHelp
             {
                 context.Users.Add(new User()
                 {
+                    Guid = Guid.NewGuid().ToString(),
                     PlatformId = platformId,
                     Username = username,
                     AvatarUrl = avatarUrl,
@@ -160,6 +161,7 @@ public class UserData(IServiceScopeFactory scopeFactory, ConfigHelper configHelp
 
         context.CompetitiveStatistics.Add(new CompetetiveStatistics()
         {
+            Guid = Guid.NewGuid().ToString(),
             BestWinStreak = 0,
             Elo = 1000,
             Season = configHelper.Season,

@@ -6,7 +6,7 @@ public class Score
 {
     [Key]
     [MaxLength(36)]
-    public string Guid { get; set; }
+    public required string Guid { get; set; }
     
     [Required]
     [MaxLength(36)]
@@ -16,13 +16,13 @@ public class Score
     public Beatmap Beatmap { get; set; }
     
     [Required]
-    public int Points { get; set; }
+    public required int Points { get; set; }
     
     [Required]
-    public int Misses { get; set; }
+    public required int Misses { get; set; }
     
     [Required]
-    public bool FullCombo { get; set; }
+    public required bool FullCombo { get; set; }
     
     [Required]
     [MaxLength(36)]
