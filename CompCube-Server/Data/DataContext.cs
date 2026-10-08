@@ -7,10 +7,9 @@ namespace CompCube_Server.Data;
 public class DataContext(DbContextOptions<DataContext> options) : DbContext(options)
 {
     public DbSet<Beatmap> Beatmaps => Set<Beatmap>();
-    public DbSet<CompetetiveStatistics> CompetetiveStatistics => Set<CompetetiveStatistics>();
+    public DbSet<CompetetiveStatistics> CompetitiveStatistics => Set<CompetetiveStatistics>();
     public DbSet<MatchResult> MatchResults => Set<MatchResult>();
     public DbSet<Pool> Pools => Set<Pool>();
-    public DbSet<Queue> Queues => Set<Queue>();
     public DbSet<User> Users => Set<User>();
     public DbSet<Score> Scores => Set<Score>();
     public DbSet<UserFlair> UserFlairs => Set<UserFlair>();
@@ -64,16 +63,6 @@ public class DataContext(DbContextOptions<DataContext> options) : DbContext(opti
             entity.ToTable("pools");
 
             entity.HasKey(p => p.Id);
-        });
-
-        modelBuilder.Entity<Queue>(entity =>
-        {
-            entity.ToTable("queues");
-            
-            entity.HasKey(p => p.Guid);
-            entity.Property(p => p.Guid).HasDefaultValueSql("NEWID()");
-            
-            entity.HasIndex(p => p.Slug).IsUnique();
         });
 
         modelBuilder.Entity<Score>(entity =>

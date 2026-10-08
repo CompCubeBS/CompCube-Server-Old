@@ -5,6 +5,4 @@ public class Pool
     public int Id { get; set; }
 
     public List<Beatmap> Maps { get; set; } = [];
-    
-    public List<Queue> Queues { get; set; } = [];
 }

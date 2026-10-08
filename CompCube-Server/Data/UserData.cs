@@ -146,7 +146,7 @@ public class UserData(DataContext context, ConfigHelper configHelper, Logger<Use
         if (userToCreateFor.CompetetiveStatistics.Any(i => i.Season == configHelper.Season))
             return;
 
-        context.CompetetiveStatistics.Add(new CompetetiveStatistics()
+        context.CompetitiveStatistics.Add(new CompetetiveStatistics()
         {
             BestWinStreak = 0,
             Elo = 1000,
@@ -327,7 +327,7 @@ public class UserData(DataContext context, ConfigHelper configHelper, Logger<Use
         if (season == -1)
             season = configHelper.Season;
         
-        return context.CompetetiveStatistics.Where(i => i.Season == season).Count(i => i.Elo > elo) + 1;
+        return context.CompetitiveStatistics.Where(i => i.Season == season).Count(i => i.Elo > elo) + 1;
     }
 
     private Flair? GetFlairFromModel(UserFlair? flair)
