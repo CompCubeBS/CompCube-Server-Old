@@ -1,21 +1,43 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace CompCube_Server.Data.Schema;
 
 public class MatchResult
 {
+    [Key]
+    [MaxLength(36)]
     public string Guid { get; set; }
     
-    public required string WinnerGuid { get; set; }
-    public required User Winner { get; set; }
+    [Required]
+    [MaxLength(36)]
+    public string WinnerGuid { get; set; }
     
-    public required string LoserGuid { get; set; }
-    public required User Loser { get; set; }
+    [Required]
+    public User Winner { get; set; }
     
-    public required string FirstPickerGuid { get; set; }
-    public required User FirstPicker { get; set; }
+    [Required]
+    [MaxLength(36)]
+    public string LoserGuid { get; set; }
+    
+    [Required]
+    public User Loser { get; set; }
+    
+    [Required]
+    [MaxLength(36)]
+    public string FirstPickerGuid { get; set; }
+    
+    [Required]
+    public User FirstPicker { get; set; }
 
+    [Required]
     public List<Score> Scores { get; set; } = [];
 
-    public required int EloTransfer { get; set; } = 0;
+    [Required]
+    public int EloTransfer { get; set; } = 0;
 
-    public required DateTime EndDate { get; set; } = DateTime.UtcNow;
+    [Required]
+    public DateTime EndDate { get; set; }
+    
+    [Required]
+    public DateTime StartDate { get; set; }
 }

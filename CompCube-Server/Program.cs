@@ -38,7 +38,13 @@ public class Program
         
         builder.Services.AddDbContext<DataContext>(options =>
         {
-            options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));
+            options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"),
+                npgOptions => {
+                    npgOptions.EnableRetryOnFailure(
+                    maxRetryCount: 3,
+                    maxRetryDelay: TimeSpan.FromSeconds(30),
+                    errorCodesToAdd: null);
+                });
         });
         
         if (_useDiscordIntegration)

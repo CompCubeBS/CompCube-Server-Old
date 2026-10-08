@@ -4,10 +4,14 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CompCube_Server.Data;
 
-public class MapData(DataContext context, ConfigHelper helper)
+public class MapData(IServiceScopeFactory scopeFactory, ConfigHelper helper)
 {
     public List<VotingMap> GetAllMapsFromActiveBatches()
     {
+        using var scope = scopeFactory.CreateScope();
+
+        var context = scope.ServiceProvider.GetService<DataContext>()!;
+        
         var pools = context.Pools.Include(p => p.Maps).Where(i => helper.ActivePools.Contains(i.Id));
         
         var maps = new List<VotingMap>();

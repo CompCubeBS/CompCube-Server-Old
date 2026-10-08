@@ -4,10 +4,14 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CompCube_Server.Data;
 
-public class BeatmapPoolData(DataContext context, Logger<BeatmapPoolData> logger)
+public class BeatmapPoolData(IServiceScopeFactory scopeFactory, ILogger<BeatmapPoolData> logger)
 {
     public void AssignBatch(string guid, int batch)
     {
+        using var scope = scopeFactory.CreateScope();
+
+        var context = scope.ServiceProvider.GetService<DataContext>()!;
+        
         using var transaction = context.Database.BeginTransaction();
 
         try
@@ -35,6 +39,10 @@ public class BeatmapPoolData(DataContext context, Logger<BeatmapPoolData> logger
     
     public List<VotingMap> GetMaps()
     {
+        using var scope = scopeFactory.CreateScope();
+        
+        var context = scope.ServiceProvider.GetService<DataContext>()!;
+        
         return context.Beatmaps
             .Include(i => i.Pools)
             .Where(i => i.Pools.Count == 0)
@@ -50,6 +58,10 @@ public class BeatmapPoolData(DataContext context, Logger<BeatmapPoolData> logger
         int durationSeconds,
         int[]? poolIds = null)
     {
+        using var scope = scopeFactory.CreateScope();
+        
+        var context = scope.ServiceProvider.GetService<DataContext>()!;
+        
         poolIds ??= [];
 
         using var transaction = context.Database.BeginTransaction();

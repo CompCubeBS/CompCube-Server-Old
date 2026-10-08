@@ -6,9 +6,9 @@ using Microsoft.EntityFrameworkCore.Storage;
 
 namespace CompCube_Server.Data;
 
-public class UserData(DataContext context, ConfigHelper configHelper, Logger<UserData> logger)
+public class UserData(IServiceScopeFactory scopeFactory, ConfigHelper configHelper, ILogger<UserData> logger)
 {
-    public UserStatistics Debug => new UserStatistics("debug", 
+    public UserStatistics Debug => new("debug", 
         "0", 
         null, 
         "https://cdn.scoresaber.com/avatars/oculus.png?v=1781213201",
@@ -24,6 +24,10 @@ public class UserData(DataContext context, ConfigHelper configHelper, Logger<Use
 
     public List<UserStatistics> GetLeaderboardRange(int start, int range, int season = -1)
     {
+        using var scope = scopeFactory.CreateScope();
+        
+        var context = scope.ServiceProvider.GetService<DataContext>()!;
+        
         if (season == -1)
             season = configHelper.Season;
 
@@ -41,11 +45,11 @@ public class UserData(DataContext context, ConfigHelper configHelper, Logger<Use
 
                 return new UserStatistics(i.Username, 
                     i.PlatformId, 
-                    i.BeatKhanaGuid, 
+                    i.BeatKhanaId, 
                     i.AvatarUrl, 
                     GetFlairFromModel(i.Flair),
                     i.Banned,
-                    GetRankFromElo(stats.Elo, season),
+                    GetRankFromElo(stats.Elo, season, context),
                     stats.Elo,
                     stats.Wins,
                     stats.TotalGamesPlayed,
@@ -58,6 +62,10 @@ public class UserData(DataContext context, ConfigHelper configHelper, Logger<Use
     {
         if (season == -1)
             season = configHelper.Season;
+        
+        using var scope = scopeFactory.CreateScope();
+        
+        var context = scope.ServiceProvider.GetService<DataContext>()!;
 
         var users = context.Users
             .Include(p => p.CompetetiveStatistics)
@@ -79,14 +87,18 @@ public class UserData(DataContext context, ConfigHelper configHelper, Logger<Use
         {
             var stats = user.CompetetiveStatistics.First(k => k.Season == season);
 
-            return new UserStatistics(user.Username, user.PlatformId, user.BeatKhanaGuid, user.AvatarUrl,
-                GetFlairFromModel(user.Flair), user.Banned, GetRankFromElo(stats.Elo, season), stats.Elo, stats.Wins,
+            return new UserStatistics(user.Username, user.PlatformId, user.BeatKhanaId, user.AvatarUrl,
+                GetFlairFromModel(user.Flair), user.Banned, GetRankFromElo(stats.Elo, season, context), stats.Elo, stats.Wins,
                 stats.TotalGamesPlayed, stats.WinStreak, stats.BestWinStreak);
         }).ToList();
     }
 
     public UserStatistics UpdateUserOnLogin(string platformId, string username, string avatarUrl)
     {
+        using var scope = scopeFactory.CreateScope();
+        
+        var context = scope.ServiceProvider.GetService<DataContext>()!;
+        
         var user = context.Users.Include(p => p.CompetetiveStatistics).FirstOrDefault(p => p.PlatformId == platformId);
 
         using var transaction = context.Database.BeginTransaction();
@@ -109,7 +121,7 @@ public class UserData(DataContext context, ConfigHelper configHelper, Logger<Use
 
                 user = context.Users.Include(p => p.CompetetiveStatistics).First(p => p.PlatformId == platformId);
 
-                CreateNewCompetitiveStatisticsIfNotExists(user.PlatformId);
+                CreateNewCompetitiveStatisticsIfNotExists(user.PlatformId, context);
 
                 context.SaveChanges();
 
@@ -120,7 +132,7 @@ public class UserData(DataContext context, ConfigHelper configHelper, Logger<Use
             user.AvatarUrl = avatarUrl;
             user.Username = username;
             
-            CreateNewCompetitiveStatisticsIfNotExists(user.PlatformId);
+            CreateNewCompetitiveStatisticsIfNotExists(user.PlatformId, context);
 
             context.SaveChanges();
             transaction.Commit();
@@ -134,7 +146,7 @@ public class UserData(DataContext context, ConfigHelper configHelper, Logger<Use
         }
     }
 
-    private void CreateNewCompetitiveStatisticsIfNotExists(string platformId)
+    private void CreateNewCompetitiveStatisticsIfNotExists(string platformId, DataContext context)
     {
         var userToCreateFor = context.Users
             .Include(i => i.CompetetiveStatistics)
@@ -162,6 +174,10 @@ public class UserData(DataContext context, ConfigHelper configHelper, Logger<Use
 
     public void IncrementWins(string platformId)
     {
+        using var scope = scopeFactory.CreateScope();
+        
+        var context = scope.ServiceProvider.GetService<DataContext>()!;
+        
         using var transaction = context.Database.BeginTransaction();
 
         try
@@ -198,6 +214,10 @@ public class UserData(DataContext context, ConfigHelper configHelper, Logger<Use
 
     public void AdjustElo(string platformId, int eloChange)
     {
+        using var scope = scopeFactory.CreateScope();
+        
+        var context = scope.ServiceProvider.GetService<DataContext>()!;
+        
         using var transaction = context.Database.BeginTransaction();
         
         try
@@ -225,6 +245,10 @@ public class UserData(DataContext context, ConfigHelper configHelper, Logger<Use
 
     public void ResetWinstreak(string platformId)
     {
+        using var scope = scopeFactory.CreateScope();
+        
+        var context = scope.ServiceProvider.GetService<DataContext>()!;
+        
         using var transaction = context.Database.BeginTransaction();
 
         try
@@ -252,6 +276,10 @@ public class UserData(DataContext context, ConfigHelper configHelper, Logger<Use
 
     public void IncrementTotalGames(string platformId)
     {
+        using var scope = scopeFactory.CreateScope();
+        
+        var context = scope.ServiceProvider.GetService<DataContext>()!;
+        
         using var transaction = context.Database.BeginTransaction();
 
         try
@@ -279,6 +307,10 @@ public class UserData(DataContext context, ConfigHelper configHelper, Logger<Use
     
     public List<UserStatistics> GetAllUserStatistics(int season = -1)
     {
+        using var scope = scopeFactory.CreateScope();
+        
+        var context = scope.ServiceProvider.GetService<DataContext>()!;
+        
         var users = context.Users.Include(p => p.CompetetiveStatistics)
             .Include(p => p.Flair)
             .Where(i => !i.Banned)
@@ -289,14 +321,18 @@ public class UserData(DataContext context, ConfigHelper configHelper, Logger<Use
         {
             var stats = user.CompetetiveStatistics.First(k => k.Season == season);
 
-            return new UserStatistics(user.Username, user.PlatformId, user.BeatKhanaGuid, user.AvatarUrl,
-                GetFlairFromModel(user.Flair), user.Banned, GetRankFromElo(stats.Elo, season), stats.Elo, stats.Wins,
+            return new UserStatistics(user.Username, user.PlatformId, user.BeatKhanaId, user.AvatarUrl,
+                GetFlairFromModel(user.Flair), user.Banned, GetRankFromElo(stats.Elo, season, context), stats.Elo, stats.Wins,
                 stats.TotalGamesPlayed, stats.WinStreak, stats.BestWinStreak);
         }).ToList();
     }
     
     public UserInfo? GetUserInfoByPlatformId(string platformId)
     {
+        using var scope = scopeFactory.CreateScope();
+        
+        var context = scope.ServiceProvider.GetService<DataContext>()!;
+        
         var user = context.Users.Include(user => user.Flair).FirstOrDefault(i => i.PlatformId == platformId);
 
         return GetUserInfoFromUserModel(user);
@@ -304,6 +340,10 @@ public class UserData(DataContext context, ConfigHelper configHelper, Logger<Use
 
     public UserStatistics? GetUserStatisticsByPlatformId(string platformId, int season = -1)
     {
+        using var scope = scopeFactory.CreateScope();
+        
+        var context = scope.ServiceProvider.GetService<DataContext>()!;
+        
         if (season == -1)
             season = configHelper.Season;
         
@@ -317,12 +357,12 @@ public class UserData(DataContext context, ConfigHelper configHelper, Logger<Use
         if (stats == null)
             return null;
 
-        var rank = GetRankFromElo(stats.Elo, season);
+        var rank = GetRankFromElo(stats.Elo, season, context);
         
-        return new UserStatistics(user.Username, user.PlatformId, user.BeatKhanaGuid, user.AvatarUrl, GetFlairFromModel(user.Flair), user.Banned, rank, stats.Elo, stats.Wins, stats.TotalGamesPlayed, stats.WinStreak, stats.BestWinStreak);
+        return new UserStatistics(user.Username, user.PlatformId, user.BeatKhanaId, user.AvatarUrl, GetFlairFromModel(user.Flair), user.Banned, rank, stats.Elo, stats.Wins, stats.TotalGamesPlayed, stats.WinStreak, stats.BestWinStreak);
     }
 
-    private int GetRankFromElo(int elo, int season)
+    private int GetRankFromElo(int elo, int season, DataContext context)
     {
         if (season == -1)
             season = configHelper.Season;
@@ -343,6 +383,6 @@ public class UserData(DataContext context, ConfigHelper configHelper, Logger<Use
         if (user == null)
             return null;
         
-        return new UserInfo(user.Username, user.PlatformId, user.BeatKhanaGuid, user.AvatarUrl, GetFlairFromModel(user.Flair), user.Banned);
+        return new UserInfo(user.Username, user.PlatformId, user.BeatKhanaId, user.AvatarUrl, GetFlairFromModel(user.Flair), user.Banned);
     }
 }

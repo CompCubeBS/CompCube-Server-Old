@@ -19,58 +19,26 @@ public class DataContext(DbContextOptions<DataContext> options) : DbContext(opti
         modelBuilder.Entity<Beatmap>(entity =>
         {
             entity.ToTable("beatmaps");
-
-            entity.HasKey(p => p.Guid);
-            entity.Property(p => p.Guid).HasDefaultValueSql("NEWID()");
-
-            entity.Property(p => p.Hash).HasMaxLength(64).IsRequired();
-            entity.Property(p => p.MaxScore).IsRequired();
-            entity.Property(p => p.DurationSeconds).IsRequired();
-            entity.Property(p => p.Category).IsRequired();
-            entity.Property(p => p.Difficulty).IsRequired();
         });
-
+        
         modelBuilder.Entity<User>(entity =>
         {
             entity.ToTable("users");
-            entity.HasKey(p => p.Guid);
-            entity.Property(p => p.Guid).HasDefaultValueSql("NEWID()");
-
-            entity.Property(p => p.Username).IsRequired();
-            entity.Property(p => p.AvatarUrl)
-                .HasDefaultValue("https://cdn.scoresaber.com/avatars/oculus.png?v=1781213201");
-
-            entity.Property(p => p.Banned).IsRequired().HasDefaultValue(false);
-
-            entity.Property(p => p.BeatKhanaGuid).IsRequired();
-            entity.HasIndex(p => p.BeatKhanaGuid).IsUnique();
-
-            entity.Property(p => p.PlatformId).IsRequired();
-            entity.HasIndex(p => p.PlatformId).IsUnique();
-
-            entity.Property(p => p.FlairGuid).HasDefaultValue(null);
+            
             entity.HasOne(p => p.Flair)
                 .WithMany()
                 .HasForeignKey(u => u.FlairGuid)
                 .OnDelete(DeleteBehavior.SetNull);
-
-            entity.Property(p => p.Created).IsRequired();
-            entity.Property(p => p.Updated).IsRequired();
         });
 
         modelBuilder.Entity<Pool>(entity =>
         { 
             entity.ToTable("pools");
-
-            entity.HasKey(p => p.Id);
         });
 
         modelBuilder.Entity<Score>(entity =>
         {
             entity.ToTable("scores");
-            
-            entity.HasKey(p => p.Guid);
-            entity.Property(p => p.Guid).HasDefaultValueSql("NEWID()");
 
             entity.HasOne(p => p.Beatmap)
                 .WithMany(p => p.Scores)
@@ -87,9 +55,6 @@ public class DataContext(DbContextOptions<DataContext> options) : DbContext(opti
         {
             entity.ToTable("competetive_statistics");
             
-            entity.HasKey(p => p.Guid);
-            entity.Property(p => p.Guid).HasDefaultValueSql("NEWID()");
-            
             entity.HasOne(p => p.User)
                 .WithMany(p => p.CompetetiveStatistics)
                 .HasForeignKey(p => p.UserGuid)
@@ -99,9 +64,6 @@ public class DataContext(DbContextOptions<DataContext> options) : DbContext(opti
         modelBuilder.Entity<MatchResult>(entity =>
         {
             entity.ToTable("match_results");
-            
-            entity.HasKey(p => p.Guid);
-            entity.Property(p => p.Guid).HasDefaultValueSql("NEWID()");
             
             entity.HasMany(p => p.Scores)
                 .WithOne(p => p.MatchResult)
@@ -127,9 +89,6 @@ public class DataContext(DbContextOptions<DataContext> options) : DbContext(opti
         modelBuilder.Entity<UserFlair>(entity =>
         {
             entity.ToTable("user_flairs");
-            
-            entity.HasKey(p => p.Guid);
-            entity.Property(p => p.Guid).HasDefaultValueSql("NEWID()");
         });
     }
 }
