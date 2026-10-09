@@ -45,8 +45,17 @@ public class AuthenticationApiController(AuthData authData, BeatKhanaService bea
 
     [HttpGet]
     [Route("/oauth/callback")]
-    public IActionResult Callback()
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public IActionResult Callback(string code, string state)
     {
-        
+        var authState = authData.ConsumeOAuthState(state);
+            
+        if (authState == null)
+            return BadRequest("INVALID_STATE");
+
+        try
+        {
+            var token = beatKhanaService.ExchangeCode(code);
+        }
     }
 }

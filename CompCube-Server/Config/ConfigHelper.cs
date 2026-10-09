@@ -6,9 +6,13 @@ public class ConfigHelper(IConfiguration config)
     
     public string BeatKhanaClientId => config.GetSection("BeatKhana").GetValue<string>("ClientId") ?? throw new Exception("Could not get BeatKhana ClientId from config!");
     
+    public string BeatKhanaClientSecret => config.GetSection("BeatKhana").GetValue<string>("ClientSecret") ?? throw new Exception("Could not get BeatKhana ClientSecret from config!");
+    
     public string BeatKhanaCallbackUrl => config.GetSection("BeatKhana").GetValue<string>("CallbackUrl") ?? throw new Exception("Could not get BeatKhana CallbackUrl from config!");
     
     public string BeatKhanaScope => config.GetSection("BeatKhana").GetValue<string>("Scope") ?? throw new Exception("Could not get BeatKhana Scope from config!");
+    
+    public string BeatKhanaApiUrl => config.GetSection("BeatKhana").GetValue<string>("ApiUrl") ?? throw new Exception("Could not get BeatKhana ApiUrl from config!");
     
     public int Season => config.GetSection("Gameplay").GetValue("Season", 0);
     
