@@ -49,6 +49,9 @@ public class BeatKhanaService(ConfigHelper config)
 
         return JsonConvert.DeserializeObject<TokenResponse>(await response.Content.ReadAsStringAsync()) ?? throw new Exception("Could not get token");
     }
-    
-    private 
+
+    public TokenClaims VerifyAccessToken(string token)
+    {
+        
+    }
 }
