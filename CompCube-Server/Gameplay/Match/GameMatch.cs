@@ -292,7 +292,7 @@ public class ClientManager
         ClientDidDisconnect?.Invoke(this);
     }
 
-    public async Task StartMatchForClient(UserInfo opponent)
+    public async Task StartMatchForClient(UserStatistics opponent)
     {
         var red = IsRed ? ConnectedClient.UserStatistics : opponent;
         var blue = !IsRed ? ConnectedClient.UserStatistics : opponent;
