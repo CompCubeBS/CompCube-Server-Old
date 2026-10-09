@@ -19,18 +19,18 @@ public class ConnectedClient(ILogger<ConnectedClient> logger) : IConnectedClient
     public event Action<ScoreSubmissionPacket, IConnectedClient>? OnScoreSubmission;
     public event Action<IConnectedClient>? OnDisconnected;
 
-    private UserInfo? _userInfo;
+    private UserStatistics? _userStatistics;
 
-    public UserInfo UserInfo => _userInfo ?? throw new Exception("Client accessed before initialization!");
+    public UserStatistics UserStatistics => _userStatistics ?? throw new Exception("Client accessed before initialization!");
     
     private readonly CancellationTokenSource _cancellationTokenSource = new();
 
     private bool _isDisconnected = false;
 
-    public void Init(WebSocket socket, UserInfo userInfo, TaskCompletionSource socketFinishedTcs)
+    public void Init(WebSocket socket, UserStatistics userInfo, TaskCompletionSource socketFinishedTcs)
     {
         _client = socket;
-        _userInfo = userInfo;
+        _userStatistics = userInfo;
         _socketFinishedTcs = socketFinishedTcs;
         
         Task.Factory.StartNew(ListenToClient, TaskCreationOptions.LongRunning);
@@ -60,7 +60,7 @@ public class ConnectedClient(ILogger<ConnectedClient> logger) : IConnectedClient
 
                 if (!UserPacket.TryDeserialize(json, out var packet))
                 {
-                    logger.LogError("Failed to deserialize packet from client {UserInfoUserId}", UserInfo.UserId);
+                    logger.LogError("Failed to deserialize packet from client {UserInfoUserId}", UserStatistics.PlatformId);
                     await Disconnect();
                     return;
                 }

@@ -8,15 +8,13 @@ using Newtonsoft.Json.Linq;
 namespace CompCube_Server.Api.Controllers;
 
 [ApiController]
-public class MapApiController(MapData mapData, BeatSaverApiWrapper beatSaver, ConfigHelper config) : ControllerBase
+public class MapApiController(MapData mapData, BeatmapPoolData beatmapPoolData, BeatSaverApiWrapper beatSaver, ConfigHelper config) : ControllerBase
 {
-    private readonly BeatSaverApiWrapper _beatSaver = beatSaver;
-    
     public static readonly string BeatmapsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data", "Beatmaps");
 
     [HttpGet("/api/maps/hashes")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public ActionResult<string[]> GetAllMapHashes() => mapData.GetAllMaps().Select(i => i.Hash).ToArray();
+    public ActionResult<string[]> GetAllMapHashes() => mapData.GetAllMapsFromActiveBatches().Select(i => i.Hash).ToArray();
 
     [HttpGet("/api/maps/download/{hash}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -37,7 +35,7 @@ public class MapApiController(MapData mapData, BeatSaverApiWrapper beatSaver, Co
     [ProducesResponseType(StatusCodes.Status200OK)]
     public ActionResult<string> GetPlaylist()
     {
-        var allMaps = mapData.GetAllMaps();
+        var allMaps = mapData.GetAllMapsFromActiveBatches();
 
         var songs = new List<PlaylistSong>();
 
@@ -67,7 +65,13 @@ public class MapApiController(MapData mapData, BeatSaverApiWrapper beatSaver, Co
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<IActionResult> AddMap(string secret, string hash, string difficulty, string category)
+    public async Task<IActionResult> AddMap(string secret, 
+        string hash, 
+        string difficulty, 
+        string category,
+        int maxScore,
+        int durationSeconds
+        )
     {
         if (secret != config.Secret)
             return Forbid();
@@ -78,9 +82,9 @@ public class MapApiController(MapData mapData, BeatSaverApiWrapper beatSaver, Co
         if (!Enum.TryParse<VotingMap.Category>(category, out var categoryType))
             return BadRequest();
         
-        mapData.AddMap(new VotingMap(hash, difficultyType, categoryType), 0);
+        beatmapPoolData.AddMap(hash, difficultyType, categoryType, maxScore, durationSeconds);
 
-        await _beatSaver.DownloadAllMissingBeatmaps();
+        await beatSaver.DownloadAllMissingBeatmaps();
 
         return Ok();
     }

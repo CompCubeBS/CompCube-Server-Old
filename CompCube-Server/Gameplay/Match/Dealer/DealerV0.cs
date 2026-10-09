@@ -12,7 +12,7 @@ public class DealerV0(MapData mapData) : IDealer
     
     public VotingMap[] PullNewCards(int count)
     {
-        var maps = mapData.GetAllMaps().Where(i => !_discardedOrAlreadyPulled.Contains(i));
+        var maps = mapData.GetAllMapsFromActiveBatches().Where(i => !_discardedOrAlreadyPulled.Contains(i));
 
         var shuffled = maps.OrderBy(_ => Random.Next()).ToList();
 

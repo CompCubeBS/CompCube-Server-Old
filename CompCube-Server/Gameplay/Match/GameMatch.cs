@@ -13,7 +13,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 namespace CompCube_Server.Gameplay.Match;
 
-public class GameMatch(MapData mapData, ILogger<GameMatch> logger, RankingData rankingData, TimeoutManager timeoutManager)
+public class GameMatch(MapData mapData, ILogger<GameMatch> logger, TimeoutManager timeoutManager, UserData userData)
 {
     private MatchSettings _matchSettings;
 
@@ -56,8 +56,8 @@ public class GameMatch(MapData mapData, ILogger<GameMatch> logger, RankingData r
         _red.OnClientFinishedDiscarding += HandleClientFinishedDiscarding;
         _blue.OnClientFinishedDiscarding += HandleClientFinishedDiscarding;
 
-        await _red.StartMatchForClient(_blue.ConnectedClient.UserInfo);
-        await _blue.StartMatchForClient(_red.ConnectedClient.UserInfo);
+        await _red.StartMatchForClient(_blue.ConnectedClient.UserStatistics);
+        await _blue.StartMatchForClient(_red.ConnectedClient.UserStatistics);
     }
 
     private async void HandleClientDisconnected(ClientManager client)
@@ -71,9 +71,9 @@ public class GameMatch(MapData mapData, ILogger<GameMatch> logger, RankingData r
             var loser = client;
             
             if (_matchSettings.Competitive)
-                timeoutManager.TimeoutUser(loser.ConnectedClient.UserInfo.UserId);
+                timeoutManager.TimeoutUser(loser.ConnectedClient.UserStatistics.PlatformId);
 
-            var eloChange = ComputeEloChange(winner.ConnectedClient.UserInfo, loser.ConnectedClient.UserInfo);
+            var eloChange = ComputeEloChange(winner.ConnectedClient.UserStatistics, loser.ConnectedClient.UserStatistics);
             
             ApplyEloChanges(winner, loser, eloChange);
             
@@ -179,7 +179,7 @@ public class GameMatch(MapData mapData, ILogger<GameMatch> logger, RankingData r
             {
                 var winner = loser.IsRed ? _blue : _red;
 
-                var eloChange = ComputeEloChange(winner.ConnectedClient.UserInfo, loser.ConnectedClient.UserInfo);
+                var eloChange = ComputeEloChange(winner.ConnectedClient.UserStatistics, loser.ConnectedClient.UserStatistics);
                 
                 ApplyEloChanges(winner, loser, eloChange);
 
@@ -198,14 +198,14 @@ public class GameMatch(MapData mapData, ILogger<GameMatch> logger, RankingData r
 
     private void ApplyEloChanges(ClientManager winner, ClientManager loser, int eloChange)
     {
-        rankingData.AdjustMmr(winner.ConnectedClient.UserInfo.UserId, eloChange);
-        rankingData.AdjustMmr(loser.ConnectedClient.UserInfo.UserId, -eloChange);
+        userData.AdjustElo(winner.ConnectedClient.UserStatistics.PlatformId, eloChange);
+        userData.AdjustElo(loser.ConnectedClient.UserStatistics.PlatformId, -eloChange);
         
-        rankingData.IncrementTotalGames(winner.ConnectedClient.UserInfo);
-        rankingData.IncrementTotalGames(loser.ConnectedClient.UserInfo);
+        userData.IncrementTotalGames(winner.ConnectedClient.UserStatistics.PlatformId);
+        userData.IncrementTotalGames(loser.ConnectedClient.UserStatistics.PlatformId);
         
-        rankingData.IncrementWins(winner.ConnectedClient.UserInfo);
-        rankingData.ResetWinstreak(winner.ConnectedClient.UserInfo);
+        userData.IncrementWins(winner.ConnectedClient.UserStatistics.PlatformId);
+        userData.ResetWinstreak(winner.ConnectedClient.UserStatistics.PlatformId);
     }
 
     private ClientManager GetOtherClient(ClientManager client)
@@ -239,9 +239,9 @@ public class GameMatch(MapData mapData, ILogger<GameMatch> logger, RankingData r
         return round * 1.5f;
     }
 
-    private int ComputeEloChange(UserInfo winner, UserInfo loser)
+    private int ComputeEloChange(UserStatistics winner, UserStatistics loser)
     {
-        var p = (1.0 / (1.0 + Math.Pow(10, ((winner.Mmr - loser.Mmr) / 400.0))));
+        var p = (1.0 / (1.0 + Math.Pow(10, ((winner.Elo - loser.Elo) / 400.0))));
 
         return (int) (_matchSettings.KFactor * p);
     }
@@ -294,8 +294,8 @@ public class ClientManager
 
     public async Task StartMatchForClient(UserInfo opponent)
     {
-        var red = IsRed ? ConnectedClient.UserInfo : opponent;
-        var blue = !IsRed ? ConnectedClient.UserInfo : opponent;
+        var red = IsRed ? ConnectedClient.UserStatistics : opponent;
+        var blue = !IsRed ? ConnectedClient.UserStatistics : opponent;
         
         ConnectedClient.OnUserDiscardedMaps += HandleUserFinishedDiscarding;
         

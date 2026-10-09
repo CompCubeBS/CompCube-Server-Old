@@ -9,6 +9,7 @@ using CompCube_Server.Gameplay.Match;
 using CompCube_Server.Gameplay.Matchmaking;
 using CompCube_Server.Interfaces;
 using CompCube_Server.Networking.ServerStatus;
+using Microsoft.EntityFrameworkCore;
 using NetCord;
 using NetCord.Gateway;
 using NetCord.Hosting.Gateway;
@@ -34,6 +35,17 @@ public class Program
         _useDiscordIntegration = builder.Configuration.GetSection("Discord").GetValue<bool>("UseDiscordIntegration");
         
         InstallBindings(builder.Services);
+        
+        builder.Services.AddDbContext<DataContext>(options =>
+        {
+            options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"),
+                npgOptions => {
+                    npgOptions.EnableRetryOnFailure(
+                    maxRetryCount: 3,
+                    maxRetryDelay: TimeSpan.FromSeconds(30),
+                    errorCodesToAdd: null);
+                });
+        });
         
         if (_useDiscordIntegration)
             builder.Services.AddDiscordGateway(options => options.Intents = GatewayIntents.All).AddApplicationCommands().AddComponentInteractions<ButtonInteraction, ButtonInteractionContext>().AddComponentInteractions<ModalInteraction, ModalInteractionContext>().AddGatewayHandlers(typeof(Program).Assembly);
@@ -94,15 +106,11 @@ public class Program
     private static void InstallBindings(IServiceCollection services)
     {
         services.AddSingleton<ConfigHelper>();
+
+        services.AddSingleton<UserData>();
+        services.AddSingleton<MapData>();
+        services.AddSingleton<BeatmapPoolData>();
         
-        services.AddTransient<MapData>();
-        services.AddTransient<UserData>();
-        services.AddTransient<RankingData>();
-        services.AddTransient<RankFetcher>();
-        services.AddTransient<MapQueue>();
-
-        services.AddTransient<DbSession>();
-
         services.AddSingleton<ServerStatusManager>();
         
         services.AddSingleton<ConnectionManager>();

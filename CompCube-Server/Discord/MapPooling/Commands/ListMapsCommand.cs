@@ -7,13 +7,13 @@ using NetCord.Services.ApplicationCommands;
 
 namespace CompCube_Server.Discord.MapPooling.Commands;
 
-public class ListMapsCommand(MapData mapData, BeatSaverApiWrapper beatSaver, MapQueue queue)
+public class ListMapsCommand(MapData mapData, BeatSaverApiWrapper beatSaver, BeatmapPoolData queue)
     : ApplicationCommandModule<ApplicationCommandContext>
 {
     [SlashCommand("maps", "Shows all active and playable maps.", Contexts = [InteractionContextType.Guild])]
     public async Task<InteractionMessageProperties> ShowMaps()
     {
-        var maps = mapData.GetAllMaps().OrderBy(i => i.MapCategory);
+        var maps = mapData.GetAllMapsFromActiveBatches().OrderBy(i => i.MapCategory);
 
         return new InteractionMessageProperties()
         {

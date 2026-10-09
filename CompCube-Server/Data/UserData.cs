@@ -1,202 +1,390 @@
-﻿using CompCube_Models.Models.ClientData;
+using CompCube_Models.Models.ClientData;
 using CompCube_Server.Config;
-using MySqlConnector;
+using CompCube_Server.Data.Schema;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace CompCube_Server.Data;
 
-public class UserData
+public class UserData(IServiceScopeFactory scopeFactory, ConfigHelper configHelper, ILogger<UserData> logger)
 {
-    private readonly RankingData _rankingData;
-    private readonly DbSession _dbSession;
-    private readonly ConfigHelper _configHelper;
+    public UserStatistics Debug => new("debug", 
+        "0", 
+        null, 
+        "https://cdn.scoresaber.com/avatars/oculus.png?v=1781213201",
+        null,
+        false,
+        0,
+        1000,
+        0,
+        0,
+        0,
+        0
+        );
 
-    public UserData(RankingData rankingData, DbSession dbSession, ConfigHelper configHelper)
+    public List<UserStatistics> GetLeaderboardRange(int start, int range, int season = -1)
     {
-        _rankingData = rankingData;
-        _dbSession = dbSession;
-        _configHelper = configHelper;
-
-        CreateInitialTables();
-    }
-
-    public UserInfo? GetUserByDiscordId(string discordId)
-    {
-        using var connection = _dbSession.CreateNewConnection();
-        var command = connection.CreateCommand();
-        command.CommandText = "SELECT * FROM userData JOIN rankingData USING (id) WHERE discordId = @discordId AND season = @season LIMIT 1";
-        command.Parameters.AddWithValue("discordId", discordId);
-        command.Parameters.AddWithValue("season", _configHelper.Season);
+        using var scope = scopeFactory.CreateScope();
         
-        using var reader = command.ExecuteReader();
-
-        while (reader.Read())
-            return GetUserInfoFromReader(reader);
+        var context = scope.ServiceProvider.GetService<DataContext>()!;
         
-        return null;
+        if (season == -1)
+            season = configHelper.Season;
+
+        return context.Users
+            .Include(p => p.CompetetiveStatistics)
+            .Include(p => p.Flair)
+            .Where(p => p.CompetetiveStatistics.Any(i => i.Season == season))
+            .OrderBy(p => p.CompetetiveStatistics.First(i => i.Season == season).Elo)
+            .Skip(start - 1)
+            .Take(range)
+            .ToArray()
+            .Select(i =>
+            {
+                var stats = i.CompetetiveStatistics.First(j => j.Season == season);
+
+                return new UserStatistics(i.Username, 
+                    i.PlatformId, 
+                    i.BeatKhanaId, 
+                    i.AvatarUrl, 
+                    GetFlairFromModel(i.Flair),
+                    i.Banned,
+                    GetRankFromElo(stats.Elo, season, context),
+                    stats.Elo,
+                    stats.Wins,
+                    stats.TotalGamesPlayed,
+                    stats.WinStreak,
+                    stats.BestWinStreak);
+            }).ToList();
     }
-
-    public void LinkDiscordToUser(string userId, string discordId)
-    {
-        using var connection = _dbSession.CreateNewConnection();
-        var command = connection.CreateCommand();
-        command.CommandText = "UPDATE userData SET discordId = @discordId WHERE id = @userId";
-        command.Parameters.AddWithValue("userId", ulong.Parse(userId));
-        command.Parameters.AddWithValue("discordId", discordId);
-
-        command.ExecuteNonQuery();
-    }
-
-    public UserInfo? GetUserById(string userId, int season = -1)
+    
+    public List<UserStatistics>? GetAroundUser(string platformId, int season = -1)
     {
         if (season == -1)
-            season = _configHelper.Season;
-
-        using var connection = _dbSession.CreateNewConnection();
-        var command = connection.CreateCommand();
-        command.CommandText = "SELECT * FROM userData JOIN rankingData USING (id) WHERE userData.id = @id AND rankingData.season = @season LIMIT 1";
-        command.Parameters.AddWithValue("id", ulong.Parse(userId));
-        command.Parameters.AddWithValue("season", season);
-        using var reader = command.ExecuteReader();
-
-        while (reader.Read())
-            return GetUserInfoFromReader(reader);
+            season = configHelper.Season;
         
-        return null;
-    }
+        using var scope = scopeFactory.CreateScope();
+        
+        var context = scope.ServiceProvider.GetService<DataContext>()!;
 
-    public List<UserInfo> GetAllUsers()
-    {
-        using var connection = _dbSession.CreateNewConnection();
-        var command = connection.CreateCommand();
-        command.CommandText = "SELECT * FROM userData JOIN rankingData USING (id) WHERE season = @season ORDER BY mmr DESC";
-        command.Parameters.AddWithValue("season", _configHelper.Season);
+        var users = context.Users
+            .Include(p => p.CompetetiveStatistics)
+            .Include(p => p.Flair)
+            .Where(p => p.CompetetiveStatistics.Any(i => i.Season == season))
+            .Where(p => !p.Banned)
+            .OrderBy(p => p.CompetetiveStatistics.First(i => i.Season == season).Elo).ToArray();
         
-        var userList = new List<UserInfo>();
-        
-        using var reader = command.ExecuteReader();
+        var index = Array.FindIndex(users, u => u.PlatformId == platformId);
 
-        while (reader.Read())
-        {
-            var user = GetUserInfoFromReader(reader);
-            if (user == null || user.Banned) 
-                continue;
-            userList.Add(user);
-        }
-        
-        return userList;
-    }
-    
-    private UserInfo? GetUserInfoFromReader(MySqlDataReader reader)
-    {
-        var id = reader.GetUInt64(0);
-        var userName = reader.GetString(1);
-        Badge? badge = null;
-        
-        if (!reader.IsDBNull(2))
-            badge = GetBadge(reader.GetString(2));
-        
-        string? discordId = null;
-        
-        if (!reader.IsDBNull(3))
-            discordId = reader.GetString(3);
-        var banned = reader.GetBoolean(4);
-
-        var rankData = _rankingData.GetRankingData(id.ToString());
-        
-
-        return new UserInfo(userName, id.ToString(), rankData.Elo, badge, rankData.Rank, discordId, banned, rankData.Wins, rankData.TotalGames, rankData.Winstreak, rankData.BestWinstreak);
-    }
-
-    private Badge? GetBadge(string? badgeName)
-    {
-        if (badgeName == null) return null;
-        
-        using var connection = _dbSession.CreateNewConnection();
-        var command = connection.CreateCommand();
-        command.CommandText = "SELECT * FROM badges WHERE badgeName = @badgeName LIMIT 1";
-        command.Parameters.AddWithValue("@badgeName", badgeName);
-        using var reader = command.ExecuteReader();
-
-        while (reader.Read())
-        {
-            if (reader.FieldCount == 0) return null;
-            
-            var name = reader.GetString(0);
-            var color = reader.GetString(1);
-            var bold = reader.GetBoolean(2);
-            
-            return new Badge(name, color, bold);
-        }
-        
-        return null;
-    }
-
-    // fixed. i think
-    public UserInfo[]? GetAroundUser(string userId)
-    {
-        var users = GetAllUsers().Where(i => !i.Banned).ToArray();
-
-        if (users.Length == 0 || users.All(u => u.UserId != userId))
+        if (index == -1)
             return null;
 
-        var index = Array.FindIndex(users, u => u.UserId == userId);
-        if (index < 0)
-            return null;
-
-        var startIndex = Math.Max(0, index - 5);
+        var startIndex = index - 5;
+        
         var count = Math.Min(10, users.Length - startIndex);
-
-        return users.Skip(startIndex).Take(count).ToArray();
-    }
-    
-    public UserInfo[] GetLeaderboardRange(int start, int range)
-    {
-        range = Math.Min(range, 10);
-
-        var users = GetAllUsers().Where(i => i.Rank >= start).ToArray();
-        Array.Resize(ref users, Math.Min(users.Length, range));
-
-        return users;
-    }
-    
-    public UserInfo UpdateUserDataOnLogin(string userId, string userName)
-    {
-        _rankingData.CreateRankingDataForUserIfNotExists(userId);
         
-        using var connection = _dbSession.CreateNewConnection();
-        var addToUserDataCommand = connection.CreateCommand();
-        addToUserDataCommand.CommandText = "INSERT IGNORE INTO userData VALUES (@userId, @userName, null, null, false)";
-        addToUserDataCommand.Parameters.AddWithValue("@userId", ulong.Parse(userId));
-        addToUserDataCommand.Parameters.AddWithValue("@userName", userName);
-        addToUserDataCommand.ExecuteNonQuery();
+        return users.Skip(startIndex).Take(count).Select(user =>
+        {
+            var stats = user.CompetetiveStatistics.First(k => k.Season == season);
 
-        return GetUserById(userId) ?? throw new Exception("Could not find updated user!");
-    }
-    
-    private void CreateInitialTables()
-    {
-        CreateUserDataTable();
-        CreateBadgeTable();
+            return new UserStatistics(user.Username, user.PlatformId, user.BeatKhanaId, user.AvatarUrl,
+                GetFlairFromModel(user.Flair), user.Banned, GetRankFromElo(stats.Elo, season, context), stats.Elo, stats.Wins,
+                stats.TotalGamesPlayed, stats.WinStreak, stats.BestWinStreak);
+        }).ToList();
     }
 
-    private void CreateBadgeTable()
+    public UserStatistics UpdateUserOnLogin(string platformId, string username, string avatarUrl)
     {
-        using var connection = _dbSession.CreateNewConnection();
-        var command = connection.CreateCommand();
-        command.CommandText = "CREATE TABLE IF NOT EXISTS badges (badgeName TEXT NOT NULL, badgeColor TEXT NOT NULL, bold BOOLEAN NOT NULL)";
-        command.ExecuteNonQuery();
+        using var scope = scopeFactory.CreateScope();
+        
+        var context = scope.ServiceProvider.GetService<DataContext>()!;
+        
+        var user = context.Users.Include(p => p.CompetetiveStatistics).FirstOrDefault(p => p.PlatformId == platformId);
+
+        using var transaction = context.Database.BeginTransaction();
+
+        try
+        {
+            if (user == null)
+            {
+                context.Users.Add(new User()
+                {
+                    Guid = Guid.NewGuid().ToString(),
+                    PlatformId = platformId,
+                    Username = username,
+                    AvatarUrl = avatarUrl,
+                    Banned = false,
+                    Created = DateTime.UtcNow,
+                    Updated = DateTime.UtcNow,
+                });
+
+                context.SaveChanges();
+
+                user = context.Users.Include(p => p.CompetetiveStatistics).First(p => p.PlatformId == platformId);
+
+                CreateNewCompetitiveStatisticsIfNotExists(user.PlatformId, context);
+
+                context.SaveChanges();
+
+                transaction.Commit();
+                return GetUserStatisticsByPlatformId(platformId)!;
+            }
+
+            user.AvatarUrl = avatarUrl;
+            user.Username = username;
+            
+            CreateNewCompetitiveStatisticsIfNotExists(user.PlatformId, context);
+
+            context.SaveChanges();
+            transaction.Commit();
+
+            return GetUserStatisticsByPlatformId(platformId)!;
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, $"Failed to create user info for {platformId}");
+            throw;
+        }
+    }
+
+    private void CreateNewCompetitiveStatisticsIfNotExists(string platformId, DataContext context)
+    {
+        var userToCreateFor = context.Users
+            .Include(i => i.CompetetiveStatistics)
+            .FirstOrDefault(i => i.PlatformId == platformId);
+
+        if (userToCreateFor == null)
+            return;
+
+        if (userToCreateFor.CompetetiveStatistics.Any(i => i.Season == configHelper.Season))
+            return;
+
+        context.CompetitiveStatistics.Add(new CompetetiveStatistics()
+        {
+            Guid = Guid.NewGuid().ToString(),
+            BestWinStreak = 0,
+            Elo = 1000,
+            Season = configHelper.Season,
+            TotalGamesPlayed = 0,
+            WinStreak = 0,
+            Wins = 0,
+            User = userToCreateFor
+        });
+
+        context.SaveChanges();
+    }
+
+    public void IncrementWins(string platformId)
+    {
+        using var scope = scopeFactory.CreateScope();
+        
+        var context = scope.ServiceProvider.GetService<DataContext>()!;
+        
+        using var transaction = context.Database.BeginTransaction();
+
+        try
+        {
+            var user = context.Users
+                .Include(i => i.CompetetiveStatistics)
+                .FirstOrDefault(i => i.PlatformId == platformId);
+
+            if (user == null)
+                return;
+            
+            var stats = user.CompetetiveStatistics.First(i => i.Season == configHelper.Season);
+
+            stats.WinStreak++;
+            context.SaveChanges();
+
+            stats.Wins++;
+            context.SaveChanges();
+            
+            if (stats.WinStreak > stats.BestWinStreak)
+            {
+                stats.BestWinStreak = stats.WinStreak;
+                context.SaveChanges();
+            }
+
+            transaction.Commit();
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, $"Failed to increment wins for {platformId}");
+            throw;
+        }
+    }
+
+    public void AdjustElo(string platformId, int eloChange)
+    {
+        using var scope = scopeFactory.CreateScope();
+        
+        var context = scope.ServiceProvider.GetService<DataContext>()!;
+        
+        using var transaction = context.Database.BeginTransaction();
+        
+        try
+        {
+            var user = context.Users
+                .Include(i => i.CompetetiveStatistics)
+                .FirstOrDefault(i => i.PlatformId == platformId);
+
+            if (user == null)
+                return;
+            
+            var stats = user.CompetetiveStatistics.First(i => i.Season == configHelper.Season);
+
+            stats.Elo += eloChange;
+            context.SaveChanges();
+
+            transaction.Commit();
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, $"Failed to adjust elo for {platformId}");
+            throw;
+        }
+    }
+
+    public void ResetWinstreak(string platformId)
+    {
+        using var scope = scopeFactory.CreateScope();
+        
+        var context = scope.ServiceProvider.GetService<DataContext>()!;
+        
+        using var transaction = context.Database.BeginTransaction();
+
+        try
+        {
+            var user = context.Users
+                .Include(i => i.CompetetiveStatistics)
+                .FirstOrDefault(i => i.PlatformId == platformId);
+
+            if (user == null)
+                return;
+            
+            var stats = user.CompetetiveStatistics.First(i => i.Season == configHelper.Season);
+
+            stats.WinStreak = 0;
+            context.SaveChanges();
+
+            transaction.Commit();
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, $"Failed to reset winstreak for {platformId}");
+            throw;
+        }
+    }
+
+    public void IncrementTotalGames(string platformId)
+    {
+        using var scope = scopeFactory.CreateScope();
+        
+        var context = scope.ServiceProvider.GetService<DataContext>()!;
+        
+        using var transaction = context.Database.BeginTransaction();
+
+        try
+        {
+            var user = context.Users
+                .Include(i => i.CompetetiveStatistics)
+                .FirstOrDefault(i => i.PlatformId == platformId);
+
+            if (user == null)
+                return;
+
+            user.CompetetiveStatistics
+                .First(i => i.Season == configHelper.Season)
+                .TotalGamesPlayed++;
+
+            context.SaveChanges();
+            transaction.Commit();
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, $"Failed to increment total games for {platformId}");
+            throw;
+        }
     }
     
-    private void CreateUserDataTable()
+    public List<UserStatistics> GetAllUserStatistics(int season = -1)
     {
-        using var connection = _dbSession.CreateNewConnection();
-        var dbCommand = connection.CreateCommand();
-        dbCommand.CommandText = "CREATE TABLE IF NOT EXISTS userData (" +
-                                "id SERIAL NOT NULL PRIMARY KEY, " +
-                                "username TEXT NOT NULL, " +
-                                "badge TEXT, " +
-                                "discordID TEXT, " +
-                                "banned BOOLEAN NOT NULL)";
-        dbCommand.ExecuteNonQuery();
+        using var scope = scopeFactory.CreateScope();
+        
+        var context = scope.ServiceProvider.GetService<DataContext>()!;
+        
+        var users = context.Users.Include(p => p.CompetetiveStatistics)
+            .Include(p => p.Flair)
+            .Where(i => !i.Banned)
+            .Where(i => i.CompetetiveStatistics.Any(j => j.Season == season))
+            .ToArray();
+
+        return users.Select(user =>
+        {
+            var stats = user.CompetetiveStatistics.First(k => k.Season == season);
+
+            return new UserStatistics(user.Username, user.PlatformId, user.BeatKhanaId, user.AvatarUrl,
+                GetFlairFromModel(user.Flair), user.Banned, GetRankFromElo(stats.Elo, season, context), stats.Elo, stats.Wins,
+                stats.TotalGamesPlayed, stats.WinStreak, stats.BestWinStreak);
+        }).ToList();
+    }
+    
+    public UserInfo? GetUserInfoByPlatformId(string platformId)
+    {
+        using var scope = scopeFactory.CreateScope();
+        
+        var context = scope.ServiceProvider.GetService<DataContext>()!;
+        
+        var user = context.Users.Include(user => user.Flair).FirstOrDefault(i => i.PlatformId == platformId);
+
+        return GetUserInfoFromUserModel(user);
+    }
+
+    public UserStatistics? GetUserStatisticsByPlatformId(string platformId, int season = -1)
+    {
+        using var scope = scopeFactory.CreateScope();
+        
+        var context = scope.ServiceProvider.GetService<DataContext>()!;
+        
+        if (season == -1)
+            season = configHelper.Season;
+        
+        var user = context.Users.Include(p => p.CompetetiveStatistics).Include(user => user.Flair).FirstOrDefault(i => i.PlatformId == platformId);
+
+        if (user == null)
+            return null;
+        
+        var stats = user.CompetetiveStatistics.FirstOrDefault(i => i.Season == season);
+
+        if (stats == null)
+            return null;
+
+        var rank = GetRankFromElo(stats.Elo, season, context);
+        
+        return new UserStatistics(user.Username, user.PlatformId, user.BeatKhanaId, user.AvatarUrl, GetFlairFromModel(user.Flair), user.Banned, rank, stats.Elo, stats.Wins, stats.TotalGamesPlayed, stats.WinStreak, stats.BestWinStreak);
+    }
+
+    private int GetRankFromElo(int elo, int season, DataContext context)
+    {
+        if (season == -1)
+            season = configHelper.Season;
+        
+        return context.CompetitiveStatistics.Where(i => i.Season == season).Count(i => i.Elo > elo) + 1;
+    }
+
+    private Flair? GetFlairFromModel(UserFlair? flair)
+    {
+        if (flair == null)
+            return null;
+
+        return new Flair(flair.Name, flair.Color);
+    }
+
+    private UserInfo? GetUserInfoFromUserModel(User? user)
+    {
+        if (user == null)
+            return null;
+        
+        return new UserInfo(user.Username, user.PlatformId, user.BeatKhanaId, user.AvatarUrl, GetFlairFromModel(user.Flair), user.Banned);
     }
 }

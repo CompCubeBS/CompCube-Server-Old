@@ -1,13 +1,14 @@
 ﻿using System.Net.WebSockets;
 using CompCube_Models.Models.ClientData;
+using CompCube_Server.Data;
 using CompCube_Server.Interfaces;
 using CompCube_Server.Networking.Client;
 
 namespace CompCube_Server.Gameplay.Matchmaking;
 
-public class ClientFactory(IServiceProvider services)
+public class ClientFactory(UserData userData, IServiceProvider services)
 {
-    public IConnectedClient Create(UserInfo userInfo, WebSocket socket, TaskCompletionSource finishedTask)
+    public IConnectedClient Create(UserStatistics userInfo, WebSocket socket, TaskCompletionSource finishedTask)
     {
         var client = ActivatorUtilities.CreateInstance<ConnectedClient>(services);
         
@@ -19,7 +20,7 @@ public class ClientFactory(IServiceProvider services)
     {
         var client = ActivatorUtilities.CreateInstance<DummyConnectedClient>(services);
         
-        client.Init(new UserInfo("debug", "0", 1000, null, 1, null, false, 0, 0, 0, 0));
+        client.Init(userData.Debug);
         return client;
     }
 }

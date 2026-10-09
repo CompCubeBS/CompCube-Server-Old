@@ -16,11 +16,11 @@ public class DummyConnectedClient(MapData mapData) : IConnectedClient
     public event Action<IConnectedClient>? OnDisconnected;
 
     public bool IsConnectionAlive => true;
-    public UserInfo UserInfo => _userInfo ?? throw new Exception("Debug client accessed before initialization!");
+    public UserStatistics UserStatistics => _userInfo ?? throw new Exception("Debug client accessed before initialization!");
     
-    private UserInfo? _userInfo;
+    private UserStatistics? _userInfo;
 
-    public void Init(UserInfo userInfo)
+    public void Init(UserStatistics userInfo)
     {
         _userInfo = userInfo;
     }
@@ -57,7 +57,7 @@ public class DummyConnectedClient(MapData mapData) : IConnectedClient
                 if (pickPhasePacket!.IsOwnPick)
                 {
                     await Task.Delay(15000);
-                    OnMapSelection?.Invoke(new MapSelectionPacket(mapData.GetAllMaps().First()), this);
+                    OnMapSelection?.Invoke(new MapSelectionPacket(mapData.GetAllMapsFromActiveBatches().First()), this);
                     await Task.Delay(5000);
                     OnScoreSubmission?.Invoke(new ScoreSubmissionPacket(Score.Empty), this);
                 }

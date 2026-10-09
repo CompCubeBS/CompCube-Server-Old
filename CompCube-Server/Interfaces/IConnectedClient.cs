@@ -15,7 +15,7 @@ public interface IConnectedClient
 
     public bool IsConnectionAlive { get; }
 
-    public UserInfo UserInfo { get; }
+    public UserStatistics UserStatistics { get; }
 
     public Task SendPacket(ServerPacket packet);
 

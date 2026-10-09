@@ -10,26 +10,13 @@ public class UserApiController(UserData userData) : ControllerBase
     [HttpGet("/api/user/id/{id}")]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public ActionResult<UserInfo> GetUserById(string id)
+    public ActionResult<UserStatistics> GetUserById(string id)
     {
-        var user = userData.GetUserById(id);
+        var user = userData.GetUserStatisticsByPlatformId(id);
         
         if (user == null) 
             return NotFound();
 
-        return user;
-    }
-
-    [HttpGet("/api/user/discord/{discordId}")]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    public ActionResult<UserInfo> GetUserByDiscordId(string discordId)
-    {
-        var user = userData.GetUserByDiscordId(discordId);
-
-        if (user == null) 
-            return NotFound();
-        
         return user;
     }
 }
