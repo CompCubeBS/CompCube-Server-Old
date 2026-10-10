@@ -10,6 +10,7 @@ public class User
     [MaxLength(36)]
     public required string Guid { get; set; }
 
+    [MaxLength(60)]
     public string? BeatKhanaId { get; set; } = null;
     
     [Required]

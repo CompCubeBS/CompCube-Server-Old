@@ -51,7 +51,7 @@ public partial class ConnectionManager(
         
         var tcs = new TaskCompletionSource();
 
-        var userInfo = userData.UpdateUserOnLogin(userId, username, avatarUrl);
+        var userInfo = userData.UpsertPluginAccount(userId, username, avatarUrl);
 
         var connectedClient = clientFactory.Create(userInfo, websocket, tcs);
         

@@ -1,13 +1,21 @@
 ﻿using System.Text;
+using System.Web;
 using CompCube_Server.Api.BeatSaver;
+using CompCube_Server.Config;
 using CompCube_Server.Data;
 using CompCube_Server.Data.Schema;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.WebUtilities;
 
 namespace CompCube_Server.Api.Controllers;
 
 [ApiController]
-public class AuthenticationApiController(AuthData authData, BeatKhanaService beatKhanaService, ILogger<AuthenticationApiController> logger) : ControllerBase
+public class AuthenticationApiController(
+    AuthData authData, 
+    BeatKhanaService beatKhanaService, 
+    ILogger<AuthenticationApiController> logger,
+    UserData userData,
+    ConfigHelper config) : ControllerBase
 {
     private static readonly Random Random = new Random();
     
@@ -46,16 +54,75 @@ public class AuthenticationApiController(AuthData authData, BeatKhanaService bea
     [HttpGet]
     [Route("/oauth/callback")]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public IActionResult Callback(string code, string state)
+    public async Task<IActionResult> Callback(string code, string state)
     {
-        var authState = authData.ConsumeOAuthState(state);
+        var saved = authData.ConsumeOAuthState(state);
             
-        if (authState == null)
+        if (saved == null)
             return BadRequest("INVALID_STATE");
 
         try
         {
-            var token = beatKhanaService.ExchangeCode(code);
+            var token = await beatKhanaService.ExchangeCode(code);
+            var claims = await beatKhanaService.VerifyAccessToken(token.AccessToken);
+            var account = userData.UpsertFromBeatKhanaToken(claims, config.BeatKhanaLinkingUrl);
+
+            if (saved.ResponseMode == AuthState.ResponseModeType.Json)
+                return Ok(new
+                {
+                    token, account
+                });
+
+            var secure = config.BeatKhanaCallbackUrl.StartsWith("https://");
+
+            Response.Cookies.Append("cc_auth_token", token.AccessToken, new CookieOptions()
+            {
+                HttpOnly = true,
+                Secure = secure,
+                SameSite = SameSiteMode.Lax,
+                MaxAge = TimeSpan.FromSeconds(token.ExpiresIn),
+                Path = "/",
+                Domain = config.AuthCookieDomain
+            });
+
+            Response.Cookies.Append("cc_refresh_token", token.RefreshToken, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = secure,
+                SameSite = SameSiteMode.Lax,
+                MaxAge = TimeSpan.FromDays(365),
+                Path = "/",
+                Domain = config.AuthCookieDomain
+            });
+
+            var redirect = new UriBuilder(new Uri(new Uri(config.WebsiteUrl), saved.ReturnTo));
+
+            if (account.Banned)
+            {
+                var query = HttpUtility.ParseQueryString(redirect.Query);
+                query["linkRequired"] = "true";
+
+                redirect.Query = query.ToString();
+            }
+
+            return Redirect(redirect.ToString());
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to create BeatKhana callback");
+
+            if (saved.ResponseMode == AuthState.ResponseModeType.Json)
+                return StatusCode(StatusCodes.Status503ServiceUnavailable);
+            
+            var redirect = new UriBuilder(new Uri(new Uri(config.WebsiteUrl), "/auth/error"));
+
+            var query = HttpUtility.ParseQueryString(redirect.Query);
+            query["reason"] = "beatkhana_unavailable";
+
+            redirect.Query = query.ToString();
+                
+            return Redirect(redirect.ToString());
+
         }
     }
 }

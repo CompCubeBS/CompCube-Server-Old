@@ -1,15 +1,21 @@
 ﻿using System.Buffers.Text;
+using System.Security.Cryptography;
 using System.Text;
 using System.Web;
 using CompCube_Server.Config;
 using CompCube_Server.Models.CompCube_Models.Models.Auth.BeatKhana;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace CompCube_Server.Api.BeatSaver;
 
-public class BeatKhanaService(ConfigHelper config)
+public class BeatKhanaService(ConfigHelper config, ILogger<BeatKhanaService> logger)
 {
-    private readonly HttpClient _httpClient = new HttpClient();
+    private readonly HttpClient _httpClient = new();
+    
+    private RSA? _publicKey;
+    
+    private const int ClockToleranceSeconds = 30;
     
     public string AuthorizationUrl(string state)
     {
@@ -50,8 +56,120 @@ public class BeatKhanaService(ConfigHelper config)
         return JsonConvert.DeserializeObject<TokenResponse>(await response.Content.ReadAsStringAsync()) ?? throw new Exception("Could not get token");
     }
 
-    public TokenClaims VerifyAccessToken(string token)
+    private async Task Initialize()
     {
+        var response = await _httpClient.GetAsync($"{config.BeatKhanaPublicKeyUrl}");
+        response.EnsureSuccessStatusCode();
         
+        var responseJson = JObject.Parse(await response.Content.ReadAsStringAsync());
+
+        _publicKey = RSA.Create();
+        
+        _publicKey.ImportFromPem(responseJson["publicKey"]?.Value<string>());
+    }
+
+    public async Task<TokenClaims> VerifyAccessToken(string accessToken)
+    {
+        if (_publicKey == null)
+            await Initialize();
+
+        var parts = accessToken.Split('.');
+
+        if (parts.Length != 3)
+            throw new Exception("Malformed BeatKhana token");
+
+        var header = JObject.Parse(Encoding.UTF8.GetString(Convert.FromBase64String(parts[0])));
+
+        if (!header.ContainsKey("alg") && header["alg"]?.Value<string>() != "RS256")
+            throw new Exception("Unexpected JWT Algorithm");
+
+        var dataBytes = Encoding.UTF8.GetBytes($"{parts[0]}.{parts[1]}");
+
+        var signatureBytes = Convert.FromBase64String(parts[2]);
+
+        var validSignature =
+            _publicKey?.VerifyData(dataBytes, signatureBytes, HashAlgorithmName.SHA256,
+                RSASignaturePadding.Pkcs1) ?? false;
+
+        if (!validSignature)
+            throw new Exception("Invalid JWT signature");
+
+        var claims = JObject.Parse(parts[1]);
+
+        var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+
+        var exp = claims["exp"]?.Value<long>();
+        var iat = claims["iat"]?.Value<long>();
+        var nbf = claims["nbf"]?.Value<long>();
+
+        if (exp <= now - ClockToleranceSeconds) throw new Exception("Expired JWT");
+        if (iat > now + ClockToleranceSeconds) throw new Exception("Invalid JWT Issue date");
+        if (nbf > now + ClockToleranceSeconds) throw new Exception("JWT not active yet");
+
+        var scopes = AccessTokenScopes(claims);
+
+        if (!scopes.Contains("compcube"))
+            throw new Exception("Scopes does not contain required scope!");
+
+        var discordId = claims["discordId"]?.Value<string>() ?? claims["id"]?.Value<string>();
+        var guid = claims["guid"]?.Value<string>();
+
+        var platformId = claims["platformId"]?.Value<string>() is string id && id.All(char.IsDigit) ? id : null;
+
+        if ((guid == null || discordId == null)
+            && platformId == null)
+            throw new Exception("JWT has no usable identity");
+
+        var platformIds = (claims.TryGetValue("platformIds", out JToken? idsToken) && idsToken is JArray idsArray)
+            ? idsArray
+                .Select(token => token.ToString())
+                .Where(id => !string.IsNullOrEmpty(id) && id.All(char.IsDigit))
+                .Distinct()
+                .ToArray()
+            : (platformId != null ? new[] { platformId } : Array.Empty<string>());
+
+        return new TokenClaims(
+            guid,
+            id: discordId,
+            discordId,
+            claims["username"]?.Value<string>().Trim(),
+            claims["avatarUrl"]?.Value<string>(),
+            claims["global_name"]?.Value<string>(),
+            claims["platform"]?.Value<string>(),
+            platformId,
+            platformIds,
+            claims["tokenType"]?.Value<string>() ?? null,
+            scopes,
+            null,
+            iat,
+            exp,
+            nbf);
+    }
+    
+    //i dont care anymore who gaf
+    private string[] AccessTokenScopes(JObject claims)
+    {
+        if (claims.TryGetValue("scopes", out JToken? scopesToken) && scopesToken is JArray scopesArray)
+        {
+            return scopesArray
+                .Select(token => token.ToString())
+                .Where(scope => !string.IsNullOrWhiteSpace(scope))
+                .Select(scope => scope.Trim())
+                .Distinct()
+                .ToArray();
+        }
+
+        if (claims.TryGetValue("scope", out JToken? scopeToken) && scopeToken.Type == JTokenType.String)
+        {
+            string scopeString = scopeToken.ToString();
+            
+            return scopeString
+                .Split([' ', '\t', '\n', '\r'], StringSplitOptions.RemoveEmptyEntries)
+                .Select(scope => scope.Trim())
+                .Distinct()
+                .ToArray();
+        }
+
+        throw new InvalidOperationException("JWT scopes are missing");
     }
 }

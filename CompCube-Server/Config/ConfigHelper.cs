@@ -13,7 +13,15 @@ public class ConfigHelper(IConfiguration config)
     public string BeatKhanaScope => config.GetSection("BeatKhana").GetValue<string>("Scope") ?? throw new Exception("Could not get BeatKhana Scope from config!");
     
     public string BeatKhanaApiUrl => config.GetSection("BeatKhana").GetValue<string>("ApiUrl") ?? throw new Exception("Could not get BeatKhana ApiUrl from config!");
+
+    public string BeatKhanaPublicKeyUrl => config.GetSection("BeatKhana").GetValue<string>("PublicKeyUrl") ??
+                                           throw new Exception("Could not get BeatKhana PublicKeyUrl from config!");
     
+    public string WebsiteUrl => config.GetSection("Website").GetValue<string>("WebsiteUrl") ?? throw new Exception("Could not get WebsiteUrl from config!");
+    
+    public string AuthCookieDomain => config.GetSection("BeatKhana").GetValue<string>("AuthCookieDomain") ?? throw new Exception("Could not get AuthCookieDomain from config!");
+    
+    public string BeatKhanaLinkingUrl => config.GetSection("BeatKhana").GetValue<string>("LinkingUrl") ?? throw new Exception("Could not get BeatKhana LinkingUrl from config!");
     public int Season => config.GetSection("Gameplay").GetValue("Season", 0);
     
     public int[] ActivePools => config.GetSection("Maps").GetSection("ActivePools").Get<int[]>() ?? throw new Exception("ActivePools not present in appsettings.json!");

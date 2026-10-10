@@ -1,6 +1,7 @@
 using CompCube_Models.Models.ClientData;
 using CompCube_Server.Config;
 using CompCube_Server.Data.Schema;
+using CompCube_Server.Models.CompCube_Models.Models.Auth.BeatKhana;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 
@@ -93,7 +94,69 @@ public class UserData(IServiceScopeFactory scopeFactory, ConfigHelper configHelp
         }).ToList();
     }
 
-    public UserStatistics UpdateUserOnLogin(string platformId, string username, string avatarUrl)
+    public UserInfo UpsertFromBeatKhanaToken(TokenClaims claims, string linkingUrl)
+    {
+        if (claims.Guid != null)
+            return UpsertFromBeatKhana(claims.PlatformId!, claims.Guid, claims.GlobalName ?? claims.Username, claims.AvatarUrl!, linkingUrl);
+
+        if (claims.PlatformId == null)
+            throw new Exception("Token has no usable identity!");
+        
+        return UpsertPluginAccount(claims.PlatformId, claims.Username);
+    }
+
+    public UserInfo UpsertFromBeatKhana(string platformId, string beatKhanaGuid, string userName, string avatarUrl, string linkingUrl)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var context = scope.ServiceProvider.GetService<DataContext>()!;
+        
+        using var transaction = context.Database.BeginTransaction();
+
+        try
+        {
+            var user = context.Users.FirstOrDefault(p => p.PlatformId == platformId);
+
+            if (user == null)
+            {
+                user = new User()
+                {
+                    Guid = Guid.NewGuid().ToString(),
+                    PlatformId = platformId,
+                    Username = userName,
+                    AvatarUrl = avatarUrl,
+                    BeatKhanaId = beatKhanaGuid,
+                };
+                
+                context.Users.Add(user);
+                context.SaveChanges();
+                
+                CreateNewCompetitiveStatisticsIfNotExists(platformId, context);
+                
+                transaction.Commit();
+
+                return GetUserInfoFromUserModel(user)!;
+            }
+
+            user.Username = userName;
+            user.AvatarUrl = avatarUrl;
+            user.BeatKhanaId = beatKhanaGuid;
+
+            context.SaveChanges();
+            
+            CreateNewCompetitiveStatisticsIfNotExists(platformId, context);
+            
+            transaction.Commit();
+
+            return GetUserInfoFromUserModel(user)!;
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Failed to upsert user from BeatKhana");
+            throw;
+        }
+    }
+
+    public UserInfo UpsertPluginAccount(string platformId, string username)
     {
         using var scope = scopeFactory.CreateScope();
         
@@ -112,7 +175,7 @@ public class UserData(IServiceScopeFactory scopeFactory, ConfigHelper configHelp
                     Guid = Guid.NewGuid().ToString(),
                     PlatformId = platformId,
                     Username = username,
-                    AvatarUrl = avatarUrl,
+                    AvatarUrl = "https://cdn.scoresaber.com/avatars/oculus.png?v=1781213201",
                     Banned = false,
                     Created = DateTime.UtcNow,
                     Updated = DateTime.UtcNow,
@@ -130,7 +193,7 @@ public class UserData(IServiceScopeFactory scopeFactory, ConfigHelper configHelp
                 return GetUserStatisticsByPlatformId(platformId)!;
             }
 
-            user.AvatarUrl = avatarUrl;
+            user.AvatarUrl = "https://cdn.scoresaber.com/avatars/oculus.png?v=1781213201";
             user.Username = username;
             
             CreateNewCompetitiveStatisticsIfNotExists(user.PlatformId, context);
