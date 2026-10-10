@@ -172,4 +172,28 @@ public class BeatKhanaService(ConfigHelper config, ILogger<BeatKhanaService> log
 
         throw new InvalidOperationException("JWT scopes are missing");
     }
+
+    public async Task<TokenResponse> Refresh(string refreshToken)
+    {
+        var basic = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{config.BeatKhanaClientId}:{config.BeatKhanaClientSecret}"));
+
+        var request = new HttpRequestMessage(HttpMethod.Post, $"{config.BeatKhanaApiUrl}/oauth/token");
+        request.Headers.Add("Authorization", $"Basic {basic}");
+        request.Headers.Add("content-type", "application/x-www-form-urlencoded");
+
+        var content = new Dictionary<string, string>()
+        {
+            { "grant_type", "authorization_code" },
+            { "refresh_token", refreshToken },
+            { "redirect_uri", config.BeatKhanaCallbackUrl },
+        };
+        
+        request.Content = new FormUrlEncodedContent(content);
+        
+        var response = await _httpClient.SendAsync(request);
+
+        response.EnsureSuccessStatusCode();
+
+        return JsonConvert.DeserializeObject<TokenResponse>(await response.Content.ReadAsStringAsync()) ?? throw new Exception("Could not get token");
+    }
 }

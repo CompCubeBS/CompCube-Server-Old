@@ -122,7 +122,42 @@ public class AuthenticationApiController(
             redirect.Query = query.ToString();
                 
             return Redirect(redirect.ToString());
-
         }
+    }
+
+    [HttpGet]
+    [Route("/oauth/refresh")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IActionResult> Refresh()
+    {
+        if (!Request.Headers.TryGetValue("Authorization", out var headerValues))
+            return Unauthorized();
+        
+        var header = headerValues.ToString();
+
+        if (!header.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+            return StatusCode(StatusCodes.Status401Unauthorized);
+            
+        var refreshToken = header[7..].Trim();
+
+        try
+        {
+            return Ok(await beatKhanaService.Refresh(refreshToken));
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to refresh token");
+            return StatusCode(StatusCodes.Status500InternalServerError);
+        }
+    }
+
+    [HttpPost]
+    [Route("/oauth/logout")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public IActionResult Logout()
+    {
+        Response.Cookies.Delete("cc_auth_token");
+        Response.Cookies.Delete("cc_refresh_token");
+        return NoContent();
     }
 }
