@@ -51,7 +51,14 @@ public partial class ConnectionManager(
         
         var tcs = new TaskCompletionSource();
 
-        var userInfo = userData.UpsertPluginAccount(userId, username, avatarUrl);
+        var userInfo = userData.GetUserStatisticsByPlatformId(userId);
+
+        if (userInfo == null)
+        {
+            await websocket.SendAsync(new ArraySegment<byte>(new AbruptDisconnectionPacket("UserData does not exist!").SerializeToBytes()), WebSocketMessageType.Text, true, CancellationToken.None);
+            await websocket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "", CancellationToken.None);
+            return;
+        }
 
         var connectedClient = clientFactory.Create(userInfo, websocket, tcs);
         
